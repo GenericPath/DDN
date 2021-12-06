@@ -6,5 +6,6 @@ numpy
 scipy
 opencv-python
 # Used for jupyter notebooks
+jupyterlab
 matplotlib
 ipykernel
