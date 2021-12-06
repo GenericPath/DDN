@@ -1,5 +1,6 @@
 Deep Declarative Networks - Summary Research Bursary
 ---
+> conda create --name ddn python=3.7
 
 Install pytorch (based on best available CUDA version)
 e.g. 
