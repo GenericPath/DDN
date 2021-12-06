@@ -1,7 +1,10 @@
+# ML libraries for deep declarative networks
 torch
 torchvision
 tensorboard
 numpy
 scipy
 opencv-python
-# matplotlib
+# Used for jupyter notebooks
+matplotlib
+ipykernel

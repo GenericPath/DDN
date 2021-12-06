@@ -10,5 +10,6 @@ then install additional requirements
 
 If cpuonly version installed, then simply uninstall via
 > conda uninstall cpuonly
+
 and this will enable GPU usage
 
