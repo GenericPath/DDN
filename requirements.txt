@@ -9,3 +9,5 @@ opencv-python
 jupyterlab
 matplotlib
 ipykernel
+ipywidgets
+scikit-image
