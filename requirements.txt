@@ -3,7 +3,7 @@ torch
 torchvision
 tensorboard
 numpy
-scipy
+scipy==1.4.1
 opencv-python
 # Used for jupyter notebooks
 jupyterlab
