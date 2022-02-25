@@ -13,7 +13,7 @@ then install additional requirements
 ```python
 pip install -r requirements.txt
 ```
-If wishing to use GPU, then simply uninstall via
+If wishing to use GPU, then simply uninstall cpuonly pytorch via
 ```python
 conda uninstall cpuonly
 ```
