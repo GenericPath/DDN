@@ -23,3 +23,7 @@ windows may need additional library
 ```python
 conda install pywin32
 ```
+
+Future steps would be to implement normalised cuts in a similar fashion to 
+https://github.com/anucvml/ddn/blob/master/tutorials/10_least_squares.ipynb
+such that the mathematics would be verified beforehand, allowing hand implementations as well as autograd implementation
