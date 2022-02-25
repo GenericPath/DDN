@@ -1,16 +1,25 @@
 Deep Declarative Networks - Summary Research Bursary
 ---
-> conda create --name ddn python=3.7
-
+Create a [conda](https://www.anaconda.com/) environment
+```python
+conda create --name ddn python=3.7
+```
 Install pytorch (based on best available CUDA version)
 e.g. 
-> conda install pytorch torchvision torchaudio cudatoolkit=*10.1* -c pytorch
-
+```python
+conda install pytorch torchvision torchaudio cudatoolkit=*10.1* -c pytorch
+```
 then install additional requirements
-> pip install -r requirements.txt
-
-If cpuonly version installed, then simply uninstall via
-> conda uninstall cpuonly
-
+```python
+pip install -r requirements.txt
+```
+If wishing to use GPU, then simply uninstall via
+```python
+conda uninstall cpuonly
+```
 and this will enable GPU usage
 
+windows may need additional library
+```python
+conda install pywin32
+```
