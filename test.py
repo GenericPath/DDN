@@ -1,4 +1,4 @@
-from genericpath import isfile
+from torch.utils.tensorboard import SummaryWriter
 import torch
 from torch.utils.data import Dataset
 import pickle
@@ -47,7 +47,7 @@ def data(path):
 class Simple01(Dataset):
     """ Simple white background, black rectangle dataset """
     
-    def __init__(self, file, transforms):
+    def __init__(self, file, transform=None):
         """
         file (string): Path to the pickle that contains [img paths, output arrays]
         """
@@ -55,7 +55,7 @@ class Simple01(Dataset):
             output = pickle.load(fp)
             self.images = output[0] # images
             self.segmentations = output[1] # segmentation
-        self.transforms = transforms
+        self.transform = transform
             
     def __len__(self):
         return len(self.images)
