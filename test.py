@@ -1,8 +1,9 @@
 from genericpath import isfile
 import torch
-from torchvision.datasets import VisionDataset
+from torch.utils.data import Dataset
 import pickle
 from PIL import Image
+import cv2
 
 import os, random, pickle
 # import matplotlib.pyplot as plt
@@ -43,10 +44,10 @@ def data(path):
             pickle.dump(output, fp)
         print("made the dataset file")
 
-class Simple01(VisionDataset):
+class Simple01(Dataset):
     """ Simple white background, black rectangle dataset """
     
-    def __init__(self, file):
+    def __init__(self, file, transforms):
         """
         file (string): Path to the pickle that contains [img paths, output arrays]
         """
@@ -54,13 +55,14 @@ class Simple01(VisionDataset):
             output = pickle.load(fp)
             self.images = output[0] # images
             self.segmentations = output[1] # segmentation
+        self.transforms = transforms
             
     def __len__(self):
         return len(self.images)
     
     def __getitem__(self, index):
             
-        img = Image.open(self.images[index])
+        img = cv2.imread(self.images[index], 0)
         y_label = torch.tensor(self.segmentations[index])
         
         if self.transform is not None:
