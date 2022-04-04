@@ -71,7 +71,22 @@ class Simple01(Dataset):
         return (img, y_label)
 
 def main():
-    path = 'data/simple01/' # location to store dataset
+    dataset = 'simple01/'
+    results = 'experiments/'+dataset
+    path = 'data/'+dataset # location to store dataset
+
+    run = "1"
+    writer = SummaryWriter(results, comment=run)
+    # add_hparams(hparam_dict, metric_dict, hparam_domain_discrete=None, run_name=None)
+    
+
+    # can do writer for a series of experiements done in a loop with lr*i etc etc..
+    hparams = {
+        "lr": 0.0001,
+        "batch": 32,
+    }
+
+
     data(path) # make the dataset
     train_dataset = Simple01(path+'dataset')
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
@@ -79,6 +94,27 @@ def main():
 
     for i in train_loader:
         print(i)
+
+
+    # visualise predictions throughout training
+    # from https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html
+    # writer.add_figure('predictions vs. actuals',
+    #                 plot_classes_preds(net, inputs, labels),
+    #                 global_step=epoch * len(trainloader) + i)
+    # running_loss = 0.0
+
+    # add graph to writer (add_graph)
+
+    # Possible metrics (from https://www.jeremyjordan.me/evaluating-image-segmentation-models/)
+    # Pixel accuracy (percent of correct pixels)
+    # IoU
+    # precision recall curves (tensorboard use add_pr_curve)
+    metrics = { # the key must be unique from anything added in add_scalar, so hparam/accuracy is used
+        'hparam/accuracy': 10*i, 
+        'hparam/loss': 10*i
+    }
+
+    writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
 
 if __name__ == '__main__':
     main()
