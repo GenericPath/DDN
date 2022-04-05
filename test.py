@@ -14,6 +14,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+from torchvision import transforms
+
 from ddn.pytorch.node import *
 
 class NormalizedCuts(EqConstDeclarativeNode):
@@ -125,8 +127,8 @@ class Simple01(Dataset):
         return len(self.images)
     
     def __getitem__(self, index):
-            
         img = cv2.imread(self.images[index], 0)
+        # or switch to PIL.Image.open() and then img.load()?
         y_label = torch.tensor(self.segmentations[index])
         
         if self.transform is not None:
@@ -160,14 +162,15 @@ def main():
         "batch": 32,
         "shuffle":True
     }
+    data(path) # make the dataset
+    train_dataset = Simple01(path+'dataset', transform=transforms.ToTensor())
 
+    print(len(train_dataset))
     # Training and Validation dataset
     val_percent = 0.1
-    n_val = int(len(dataset) * val_percent)
-    n_train = len(dataset) - n_val
+    n_val = int(len(train_dataset) * val_percent)
+    n_train = len(train_dataset) - n_val
 
-    data(path) # make the dataset
-    train_dataset = Simple01(path+'dataset')
 
     train_set, val_set = random_split(train_dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
     train_loader = torch.utils.data.DataLoader(train_set, pin_memory=True,
@@ -175,15 +178,16 @@ def main():
     val_loader = torch.utils.data.DataLoader(val_set, pin_memory=True,
                                                 batch_size=hparams['batch'], shuffle=hparams['shuffle'])
     
+
+    x,y = next(iter(train_loader))
+    print(x.shape)
+    print(y.shape)
     print('Dataset : %d EA \nDataLoader : %d SET' % (len(train_dataset),len(train_loader)))
 
-    net = Net()
-    loss = nn.CrossEntropyLoss()
+    # net = Net()
+    # loss = nn.CrossEntropyLoss()
     
-    opt = optim.SGD(net.parameters(), lr=hparams['lr'], momentum=hparams['momentum'])
-
-    
-
+    # opt = optim.SGD(net.parameters(), lr=hparams['lr'], momentum=hparams['momentum'])
 
     # visualise predictions throughout training
     # from https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html
@@ -199,8 +203,8 @@ def main():
     # IoU
     # precision recall curves (tensorboard use add_pr_curve)
     metrics = { # the key must be unique from anything added in add_scalar, so hparam/accuracy is used
-        'hparam/accuracy': 10*i, 
-        'hparam/loss': 10*i
+        'hparam/accuracy': 10, 
+        'hparam/loss': 10#*i as an example this could all be in a loop....
     }
 
     writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
