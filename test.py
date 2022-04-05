@@ -1,18 +1,82 @@
 from torch.utils.tensorboard import SummaryWriter
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split
 import pickle
 from PIL import Image
 import cv2
+# from tqdm import tqdm
 
 import os, random, pickle
 # import matplotlib.pyplot as plt
 import numpy as np
 
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 
-def data(path):
+from ddn.pytorch.node import *
+
+class NormalizedCuts(EqConstDeclarativeNode):
+    """
+    A declarative node to embed Normalized Cuts into a Neural Network
+    
+    Normalized Cuts and Image Segmentation https://people.eecs.berkeley.edu/~malik/papers/SM-ncut.pdf
+    Shi, J., & Malik, J. (2000)
+    """
+    def __init__(self, chunk_size=None):
+        super().__init__(chunk_size=chunk_size) # input is divided into chunks of at most chunk_size
+        
+    def objective(self, x, y):
+        """
+        f(W,y) = y^T * (D-W) * y / y^T * D * y
+        """
+        
+        # for i in len(x):
+        # W is an NxN symmetrical matrix with W(i,j) = w_ij
+        D = x.sum(1).diag() # D is an NxN diagonal matrix with d on diagonal, for d(i) = sum_j(w(i,j))
+        L = D - x
+
+        y_t = torch.t(y)
+
+        return torch.div(torch.matmul(torch.matmul(y_t, L),y),torch.matmul(torch.matmul(y_t,D),y))
+    
+    def equality_constraints(self, x, y):
+        """
+        subject to y^T * D * 1 = 0
+        """
+        # Ensure correct size and shape of y... scipy minimise flattens y         
+        N = x.size(dim=0)
+        
+        #x is an NxN symmetrical matrix with W(i,j) = w_ij
+        D = x.sum(1).diag() # D is an NxN diagonal matrix with d on diagonal, for d(i) = sum_j(w(i,j))
+        ONE = torch.ones(N,1)   # Nx1 vector of all ones
+        y_t = torch.t(y)
+        
+        return torch.matmul(torch.matmul(y_t,D), ONE)
+
+    def solve(self, W):
+        D = torch.diag(torch.sum(W, 0))
+        D_half_inv = torch.diag(1.0 / torch.sqrt(torch.sum(W, 0)))
+        M = torch.matmul(D_half_inv, torch.matmul((D - W), D_half_inv))
+
+        # M is the normalised laplacian
+
+        (w, v) = torch.linalg.eigh(M)
+
+        #find index of second smallest eigenvalue
+        index = torch.argsort(w)[1]
+
+        v_partition = v[:, index]
+        # instead of the sign of a digit being the binary split, let the NN learn it
+        # v_partition = torch.sign(v_partition)
+    
+        # return the eigenvector and a blank context
+        return v_partition, _
+
+
+def data(path, total_images=300):
+    """ Generate a simple dataset (if it doesn't already exist) """
     img_size = (32,32) # image size (w,h)
-    total_images = 300 # number of images to generate
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -70,6 +134,15 @@ class Simple01(Dataset):
             
         return (img, y_label)
 
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = nn.ConvTranspose2d()
+
+    def forward(self, x):
+        x = self.conv1(x)
+
+
 def main():
     dataset = 'simple01/'
     results = 'experiments/'+dataset
@@ -78,22 +151,38 @@ def main():
     run = "1"
     writer = SummaryWriter(results, comment=run)
     # add_hparams(hparam_dict, metric_dict, hparam_domain_discrete=None, run_name=None)
-    
 
     # can do writer for a series of experiements done in a loop with lr*i etc etc..
     hparams = {
-        "lr": 0.0001,
+        "optim":"sgd",
+        "lr": 0.001,
+        "momentum":0.9,
         "batch": 32,
+        "shuffle":True
     }
 
+    # Training and Validation dataset
+    val_percent = 0.1
+    n_val = int(len(dataset) * val_percent)
+    n_train = len(dataset) - n_val
 
     data(path) # make the dataset
     train_dataset = Simple01(path+'dataset')
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
+
+    train_set, val_set = random_split(train_dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+    train_loader = torch.utils.data.DataLoader(train_set, pin_memory=True,
+                                                batch_size=hparams['batch'], shuffle=hparams['shuffle'])
+    val_loader = torch.utils.data.DataLoader(val_set, pin_memory=True,
+                                                batch_size=hparams['batch'], shuffle=hparams['shuffle'])
+    
     print('Dataset : %d EA \nDataLoader : %d SET' % (len(train_dataset),len(train_loader)))
 
-    for i in train_loader:
-        print(i)
+    net = Net()
+    loss = nn.CrossEntropyLoss()
+    
+    opt = optim.SGD(net.parameters(), lr=hparams['lr'], momentum=hparams['momentum'])
+
+    
 
 
     # visualise predictions throughout training
