@@ -18,6 +18,8 @@ from torchvision import transforms
 
 from ddn.pytorch.node import *
 
+import argparse
+
 class NormalizedCuts(EqConstDeclarativeNode):
     """
     A declarative node to embed Normalized Cuts into a Neural Network
@@ -145,21 +147,36 @@ class Net(nn.Module):
         x = self.conv1(x)
 
 
-def main():
+def train(logging=False,
+          epochs: int = 20,
+          batch_size: int = 32,
+          learning_rate: float = 1e-4, # 0.0001
+          momentum: float = 0.9, # unsure if this is a good value or not
+          val_percent: float = 0.1,
+          save_checkpoint: bool = True,
+        ):
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device {device}')
+
+
     dataset = 'simple01/'
     results = 'experiments/'+dataset
     path = 'data/'+dataset # location to store dataset
+    dir_checkpoint = 'checkpoints/'+dataset
 
-    run = "1"
-    writer = SummaryWriter(results, comment=run)
+    if logging:
+        run = "1"
+        writer = SummaryWriter(results, comment=run)
     # add_hparams(hparam_dict, metric_dict, hparam_domain_discrete=None, run_name=None)
 
     # can do writer for a series of experiements done in a loop with lr*i etc etc..
     hparams = {
-        "optim":"sgd",
-        "lr": 0.001,
-        "momentum":0.9,
-        "batch": 32,
+        "epochs":epochs,
+        "optim":"sgd", # this is hardcoded for now..
+        "lr": learning_rate,
+        "momentum":momentum,
+        "batch": batch_size,
         "shuffle":True
     }
     data(path) # make the dataset
@@ -167,7 +184,6 @@ def main():
 
     print(len(train_dataset))
     # Training and Validation dataset
-    val_percent = 0.1
     n_val = int(len(train_dataset) * val_percent)
     n_train = len(train_dataset) - n_val
 
@@ -178,13 +194,13 @@ def main():
     val_loader = torch.utils.data.DataLoader(val_set, pin_memory=True,
                                                 batch_size=hparams['batch'], shuffle=hparams['shuffle'])
     
+    # Test dataset shapes
+    # x,y = next(iter(train_loader))
+    # print(x.shape)
+    # print(y.shape)
+    # print('Dataset : %d EA \nDataLoader : %d SET' % (len(train_dataset),len(train_loader)))
 
-    x,y = next(iter(train_loader))
-    print(x.shape)
-    print(y.shape)
-    print('Dataset : %d EA \nDataLoader : %d SET' % (len(train_dataset),len(train_loader)))
-
-    # net = Net()
+    net = Net()
     # loss = nn.CrossEntropyLoss()
     
     # opt = optim.SGD(net.parameters(), lr=hparams['lr'], momentum=hparams['momentum'])
@@ -207,7 +223,39 @@ def main():
         'hparam/loss': 10#*i as an example this could all be in a loop....
     }
 
-    writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
+    best_accuracy = 0
+    for epoch in range(epochs):
+        # TRAIN
+
+        # TEST AGAINST VALIDATION
+        new_accuracy = 0
+
+        # SAVE IF IT IS THE BEST
+        if save_checkpoint: # maybe only save if the accuracy is the highest we have seen so far...
+            if new_accuracy >= best_accuracy:
+                torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch + 1)))
+                print(f'Checkpoint {epoch + 1} saved!')
+
+    if logging:
+        writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
+
+# def get_args():
+#     parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
+#     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=5, help='Number of epochs')
+#     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=1, help='Batch size')
+#     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-5,
+#                         help='Learning rate', dest='lr')
+#     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
+#     parser.add_argument('--scale', '-s', type=float, default=0.5, help='Downscaling factor of the images')
+#     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
+#                         help='Percent of the data that is used as validation (0-100)')
+#     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
+#     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
+
+#     return parser.parse_args()
+
 
 if __name__ == '__main__':
-    main()
+    # get_args()
+    
+    train()
