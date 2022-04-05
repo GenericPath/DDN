@@ -11,3 +11,5 @@ matplotlib
 ipykernel
 ipywidgets
 scikit-image
+
+argparse
