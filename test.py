@@ -41,6 +41,7 @@ class Net(nn.Module):
         x = self.preNC(x) # make the affinity matrix (or something else that works with)
         x = self.decl(x) # check the size of this output...
         x = self.postNC(x)
+        return x
 
 def train(logging=False,
           epochs: int = 20,
@@ -116,7 +117,6 @@ def train(logging=False,
     }
 
     best_accuracy = 0
-    new_accuracy = -1 # this is just for debug commenting out code
     for epoch in range(epochs):
         # TRAIN
         net.train()
@@ -124,7 +124,10 @@ def train(logging=False,
         for input_batch, target_batch in train_loader:
             output = net(input_batch)
             loss = criterion(output, target_batch)
-            loss.backward()
+            # Compute gradient and do optimizer step
+            optimizer.zero_grad()
+            if not torch.isnan(loss).any():
+                loss.backward()
             optimizer.step()
             
             print(f'Batch time\t{time.time()-start_time}')
@@ -138,12 +141,13 @@ def train(logging=False,
         net.eval()
         with torch.no_grad():
             for input_batch, target_batch in val_loader:
-                continue
-            new_accuracy = 0
+                output = net(input_batch)
+                val_accuracy = output.eq(target_batch).float().mean()
+                writer.add_scalar("Validation accuracy", val_accuracy, epoch)
 
         # SAVE IF IT IS THE BEST
         if save_checkpoint: # maybe only save if the accuracy is the highest we have seen so far...
-            if new_accuracy >= best_accuracy:
+            if val_accuracy >= best_accuracy:
                 torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch + 1)))
                 print(f'Checkpoint {epoch + 1} saved!')
 
