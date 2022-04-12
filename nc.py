@@ -15,19 +15,19 @@ class NormalizedCuts(EqConstDeclarativeNode):
         super().__init__(chunk_size=chunk_size) # input is divided into chunks of at most chunk_size
         self.constant = 1e-5
         
-    def objective(self, x_batch, y_batch):
+    def objective(self, x_batch, y):
         """
         f(W,y) = y^T * (D-W) * y / y^T * D * y
         """
         for i in range(len(x_batch)): # code in ddn-3 for the torch.einsum version of this, may switch for efficiency later...
             x = x_batch[i][0].add(self.constant)
-            y = y_batch[i][0].add(self.constant)
+            y_i = y[i][0].add(self.constant)#.flatten()
             # W is an NxN symmetrical matrix with W(i,j) = w_ij
             D = x.sum(1).diag() # D is an NxN diagonal matrix with d on diagonal, for d(i) = sum_j(w(i,j))
             L = D - x
 
-            y_t = torch.t(y)
-            x_batch[i][0] = torch.div(torch.matmul(torch.matmul(y_t, L),y),torch.matmul(torch.matmul(y_t,D),y))
+            y_t = torch.t(y_i)
+            x_batch[i][0] = torch.div(torch.matmul(torch.matmul(y_t, L),y_i),torch.matmul(torch.matmul(y_t,D),y_i))
         return x_batch
     
     def equality_constraints(self, x_batch, y_batch):
@@ -36,7 +36,7 @@ class NormalizedCuts(EqConstDeclarativeNode):
         """
         for i in range(len(x_batch)):
             x = x_batch[i][0].add(self.constant)
-            y = y_batch[i][0].add(self.constant)
+            y = y_batch[i][0].add(self.constant)#.flatten()
             # Ensure correct size and shape of y... scipy minimise flattens y         
             N = x.size(dim=0)
             
@@ -48,8 +48,11 @@ class NormalizedCuts(EqConstDeclarativeNode):
         return x_batch
 
     def solve(self, W_batch):
+        W_batch.detach()
+        output = torch.zeros((32,1,1024), dtype=torch.float32)
         for i in range(len(W_batch)):
-            W = W_batch[i][0].add(self.constant) # Each batch is passed as [batch, channels, width, height], add a small constant to avoid NaN
+            W = W_batch[i][0] # Each batch is passed as [batch, channels, width, height], add a small constant to avoid NaN
+            W = W.add(self.constant)
 
             D = torch.diag(torch.sum(W, 0))
             D_half_inv = torch.diag(1.0 / torch.sqrt(torch.sum(W, 0)))
@@ -67,5 +70,5 @@ class NormalizedCuts(EqConstDeclarativeNode):
             # v_partition = torch.sign(v_partition)
         
             # return the eigenvector and a blank context
-            W_batch[i][0] = v_partition
-        return W_batch, None
+            output[i][0] = v_partition#.view(32,32)
+        return output, None
