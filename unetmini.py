@@ -92,7 +92,7 @@ class PreNC(nn.Module):
         self.lastcnn = nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=3, stride=1, padding=1)
         self.relu = nn.ReLU()
         # self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.fc = nn.Linear(out_features=10404)
+        # self.fc = nn.Linear(out_features=10404)
     def forward(self, x):
         x = self.block1(x)
         # x = self.maxpool(x)
@@ -101,7 +101,7 @@ class PreNC(nn.Module):
         # x = self.maxpool(x)
         x = self.relu(self.lastcnn(x))
         # combine the 1024 filters of 32x32 images into a singular 1024x1024 matrix (affinity matrix)
-        x = x.view(x.size(0), x.size(1), 1024, 1024)
+        x = x.view(x.size(0), 1, 1024, 1024)
         return x
     def conv_block(self, c_in, c_out, **kwargs):
         seq_block = nn.Sequential(
@@ -119,7 +119,7 @@ class PostNC(nn.Module):
         self.lastcnn = nn.Conv2d(in_channels=256, out_channels=1, kernel_size=3, stride=1, padding=1)
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
     def forward(self, x):
-        x = x.view(x.size(0), x.size(1), 32, 32)
+        x = x.view(x.size(0), 1, 32, 32)
         x = self.block1(x)
         x = self.block2(x)
         x = self.lastcnn(x)
