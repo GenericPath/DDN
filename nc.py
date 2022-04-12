@@ -68,4 +68,4 @@ class NormalizedCuts(EqConstDeclarativeNode):
         
             # return the eigenvector and a blank context
             W_batch[i][0] = v_partition
-        return v_partition, None
+        return W_batch, None

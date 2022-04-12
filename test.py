@@ -1,43 +1,46 @@
+# Deep Declarative Node for Normalised Cuts
+# Garth Wales - 2022
+
+from numpy import outer
 from torch.utils.tensorboard import SummaryWriter
 import torch
 from torch.utils.data import random_split
-
-# from tqdm import tqdm
-
-import pickle
-
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
 from torchvision import transforms
+
+# from tqdm import tqdm
+# import pickle
+import time
 
 # locally defined imports
 from ddn.pytorch.node import DeclarativeLayer
 from nc import NormalizedCuts
-from unetmini import UNet
+from unetmini import PreNC, PostNC #UNet
 from data import data, Simple01
 
+# to be added... there will be better code soon tm
 import argparse
 
 try:
+    # Use in debug to print sizes for a given input size
     from torchsummary import summary
-    sumImported = True
 except:
-    sumImported = False
+    pass
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.unet = UNet(1)
+        self.preNC = PreNC()
         self.nc = NormalizedCuts()
-        self.decl = DeclarativeLayer(self.nc) # converts the NC into a torch
-        self.unet2 = UNet(1)
+        self.decl = DeclarativeLayer(self.nc) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
+        self.postNC = PostNC()
 
     def forward(self, x):
-        x = self.unet(x) # make the affinity matrix (or something else that works with)
+        x = self.preNC(x) # make the affinity matrix (or something else that works with)
         x = self.decl(x) # check the size of this output...
-        x = self.unet2(x)
+        x = self.postNC(x)
 
 def train(logging=False,
           epochs: int = 20,
@@ -50,7 +53,6 @@ def train(logging=False,
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Using device {device}')
-
 
     dataset = 'simple01/'
     results = 'experiments/'+dataset
@@ -79,15 +81,12 @@ def train(logging=False,
     n_val = int(len(train_dataset) * val_percent)
     n_train = len(train_dataset) - n_val
 
-
     train_set, val_set = random_split(train_dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
     train_loader = torch.utils.data.DataLoader(train_set, pin_memory=True,
                                                 batch_size=hparams['batch'], shuffle=hparams['shuffle'])
     val_loader = torch.utils.data.DataLoader(val_set, pin_memory=True,
                                                 batch_size=hparams['batch'], shuffle=hparams['shuffle'])
     
-
-
     # Test dataset shapes
     # x,y = next(iter(train_loader))
     # print(x.shape)
@@ -95,11 +94,8 @@ def train(logging=False,
     # print('Dataset : %d EA \nDataLoader : %d SET' % (len(train_dataset),len(train_loader)))
 
     net = Net()
-    # if not sumImported:
-    #     summary(net, input_size=(1, 32, 32))
-
-    loss = nn.CrossEntropyLoss(reduction='none')
-    opt = optim.SGD(net.parameters(), lr=hparams['lr'], momentum=hparams['momentum'])
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = optim.SGD(net.parameters(), lr=hparams['lr'], momentum=hparams['momentum'])
 
     # visualise predictions throughout training
     # from https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html
@@ -120,11 +116,30 @@ def train(logging=False,
     }
 
     best_accuracy = 0
+    new_accuracy = -1 # this is just for debug commenting out code
     for epoch in range(epochs):
         # TRAIN
+        net.train()
+        start_time = time.time()
+        for input_batch, target_batch in train_loader:
+            output = net(input_batch)
+            loss = criterion(output, target_batch)
+            loss.backward()
+            optimizer.step()
+            
+            print(f'Batch time\t{time.time()-start_time}')
+            # calculate accuracy, output metrics
+            train_accuracy = output.eq(target_batch).float().mean()
+            writer.add_scalar("Train accuracy", train_accuracy, epoch)
+            writer.add_scalar("Loss/train", loss.item(), epoch)
+            start_time = time.time()
 
         # TEST AGAINST VALIDATION
-        new_accuracy = 0
+        net.eval()
+        with torch.no_grad():
+            for input_batch, target_batch in val_loader:
+                continue
+            new_accuracy = 0
 
         # SAVE IF IT IS THE BEST
         if save_checkpoint: # maybe only save if the accuracy is the highest we have seen so far...
@@ -157,5 +172,10 @@ if __name__ == '__main__':
     # node = NormalizedCuts()
     # a = a.detach()
     # y,_ = node.solve(a)
+
+    # if args.seed is not None:
+    #     random.seed(args.seed)
+    #     torch.manual_seed(args.seed)
+    #     cudnn.deterministic = True
 
     train()
