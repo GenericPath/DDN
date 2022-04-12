@@ -58,9 +58,10 @@ class Simple01(Dataset):
     def __getitem__(self, index):
         img = cv2.imread(self.images[index], 0)
         # or switch to PIL.Image.open() and then img.load()?
-        y_label = torch.tensor(self.segmentations[index])
+        y_label = self.segmentations[index]
         
         if self.transform is not None:
             img = self.transform(img)
+            y_label = self.transform(y_label)
             
         return (img, y_label)
