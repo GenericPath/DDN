@@ -57,7 +57,7 @@ class UNet(nn.Module):
         self.decoder     = Decoder(dec_chs)
         self.head        = nn.Conv2d(dec_chs[-1], num_class, 1)
         self.retain_dim  = retain_dim
-        self.out_sz = out_sz # unsure if this is needed
+        self.out_sz = out_sz
 
     def forward(self, x):
         enc_ftrs = self.encoder(x)
