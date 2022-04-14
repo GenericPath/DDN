@@ -48,11 +48,10 @@ class NormalizedCuts(EqConstDeclarativeNode):
         return x_batch
 
     def solve(self, W_batch):
-        W_batch.detach()
-        output = torch.zeros((32,1,1024), dtype=torch.float32)
+        # W_batch = torch.squeeze(W_batch, 1)
+        output = torch.zeros(32,1,1024) #, dtype=torch.float32, requires_grad=True)
         for i in range(len(W_batch)):
-            W = W_batch[i][0] # Each batch is passed as [batch, channels, width, height], add a small constant to avoid NaN
-            W = W.add(self.constant)
+            W = torch.add(W_batch[i,0], self.constant) # Each batch is passed as [batch, channels, width, height], add a small constant to avoid NaN
 
             D = torch.diag(torch.sum(W, 0))
             D_half_inv = torch.diag(1.0 / torch.sqrt(torch.sum(W, 0)))
@@ -61,6 +60,9 @@ class NormalizedCuts(EqConstDeclarativeNode):
             # M is the normalised laplacian
 
             (w, v) = torch.linalg.eigh(M)
+            # TODO: Operate eigh across batch dimensions (it only operates on the last two dimensions...)
+            # TODO: ... this means changing everything into einsum operations! this way it will all work?
+            # TODO: because the without batch version has grad_fn with eigh as part of it.. therefore it should probably work!
 
             #find index of second smallest eigenvalue
             index = torch.argsort(w)[1]
@@ -70,5 +72,14 @@ class NormalizedCuts(EqConstDeclarativeNode):
             # v_partition = torch.sign(v_partition)
         
             # return the eigenvector and a blank context
-            output[i][0] = v_partition#.view(32,32)
+            output[i, 0] = v_partition#.view(32,32)
         return output, None
+    
+    def test(self, x, y):
+        """ Test gradient """
+        # Evaluate objective function at (xs,y):
+        f = torch.enable_grad()(self.objective)(x, y=y) # b
+
+        # Compute partial derivative of f wrt y at (xs,y):
+        fY = grad(f, y, grad_outputs=torch.ones_like(f), create_graph=True)
+        return fY
