@@ -65,7 +65,7 @@ class NormalizedCuts(EqConstDeclarativeNode):
             # TODO: because the without batch version has grad_fn with eigh as part of it.. therefore it should probably work!
 
             #find index of second smallest eigenvalue
-            index = torch.argsort(w)[1]
+            index = torch.argsort(w)[1] # arg sort not neccessary, as this eigh returns sorted already...
 
             v_partition = v[:, index]
             # instead of the sign of a digit being the binary split, let the NN learn it
