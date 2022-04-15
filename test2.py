@@ -13,10 +13,6 @@ def main():
 
         # B = torch.randn(32,1,32) # real 32x32 image output
 
-        # These were an attempt to multiple by an I of the correct size, but realised mistakes
-        # b,c,x,y = A.shape # last two dimensions of input
-        # I = torch.eye(x,y).reshape(1,1,x,y).repeat(b,c,1,1) # batch of identity matrices
-
         # can also replace bc with ...
         d = torch.einsum('bcij->bcj', A) # == A.sum(0) --- d vector
         D = torch.diag_embed(d) # D = matrix with d on diagonal
@@ -24,26 +20,6 @@ def main():
 
         L = (D-A)
         L_norm = torch.einsum('bcij,bcjk->bcik', torch.einsum('bcij,bcjk->bcik', D_inv_sqrt , L) , D_inv_sqrt)
-
-        # Approach 1
-        # D_inv_sqrt = torch.linalg.inv(torch.sqrt(D)) # eqv. to torch.inverse
-        # torch.where(D_inv_sqrt == float('inf'), # etc
-
-        # Approach 2
-        # from https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/utils/get_laplacian.html
-        # deg_inv_sqrt = deg.pow_(-0.5)
-        # deg_inv_sqrt.masked_fill_(deg_inv_sqrt == float('inf'), 0)
-
-        # Approach 3
-        # but instead...
-        # https://pytorch.org/docs/master/generated/torch.linalg.inv.html#torch.linalg.inv
-        # suggests torch.linalg.solve to be more stable.
-
-        # solves AX = B for X.. so gives inverse(A)*B
-        # L_norm = torch.linalg.solve(torch.sqrt(D), (D-A))# Normalized laplacian (D^-0.5 * (D-W) * D^-0.5)
-        # TODO: check if D-A or just A...
-        # to solve for XA = B, pass inputs A and B tranposed, and tranpose solution
-        # L_norm = torch.transpose(torch.linalg.solve(torch.transpose(torch.sqrt(D), -2, -1), torch.transpose(L_norm, -2, -1)), -2, -1)
 
         # Solve eigenvectors and eigenvalues
         (w, v) = torch.linalg.eigh(L_norm)
