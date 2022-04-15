@@ -33,7 +33,7 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.preNC = PreNC()
-        self.nc = NormalizedCuts()
+        self.nc = NormalizedCuts(eps=1) # eps sets the absolute difference between objective solutions and 0
         self.decl = DeclarativeLayer(self.nc) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
         self.postNC = PostNC()
 
