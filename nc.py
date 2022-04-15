@@ -13,67 +13,75 @@ class NormalizedCuts(EqConstDeclarativeNode):
     """
     def __init__(self, chunk_size=None):
         super().__init__(chunk_size=chunk_size) # input is divided into chunks of at most chunk_size
-        self.constant = 1e-5
         
-    def objective(self, x_batch, y):
+    def objective(self, x, y):
         """
         f(W,y) = y^T * (D-W) * y / y^T * D * y
-        """
-        for i in range(len(x_batch)): # code in ddn-3 for the torch.einsum version of this, may switch for efficiency later...
-            x = x_batch[i][0].add(self.constant)
-            y_i = y[i][0].add(self.constant)#.flatten()
-            # W is an NxN symmetrical matrix with W(i,j) = w_ij
-            D = x.sum(1).diag() # D is an NxN diagonal matrix with d on diagonal, for d(i) = sum_j(w(i,j))
-            L = D - x
 
-            y_t = torch.t(y_i)
-            x_batch[i][0] = torch.div(torch.matmul(torch.matmul(y_t, L),y_i),torch.matmul(torch.matmul(y_t,D),y_i))
-        return x_batch
+        output: shape - (b, c, x)
+        """
+        y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
+        b, c, N = y.shape
+        y = y.reshape(b,c,1,N) # convert to a col vector
+
+        d = torch.einsum('bcij->bcj', x) # eqv to x.sum(0) --- d vector
+        D = torch.diag_embed(d) # D = matrix with d on diagonal
+
+        L = D-x
+
+        return torch.div(
+            torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bckj->bcik', y, L), y),
+            torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bckj->bcik', y, D), y)
+        ).squeeze(-2)
+
     
-    def equality_constraints(self, x_batch, y_batch):
+    def equality_constraints(self, x, y):
         """
+        y = solution matrix - shape: (b,c,x,y)
+        x = input affinity/weight matrix - shape: (b,c,N,N) for N = x*y
         subject to y^T * D * 1 = 0
+
+        output: size (b, c, x)
         """
-        for i in range(len(x_batch)):
-            x = x_batch[i][0].add(self.constant)
-            y = y_batch[i][0].add(self.constant)#.flatten()
-            # Ensure correct size and shape of y... scipy minimise flattens y         
-            N = x.size(dim=0)
-            
-            #x is an NxN symmetrical matrix with W(i,j) = w_ij
-            D = x.sum(1).diag() # D is an NxN diagonal matrix with d on diagonal, for d(i) = sum_j(w(i,j))
-            ONE = torch.ones(N,1)   # Nx1 vector of all ones
-            y_t = torch.t(y)
-            x_batch[i][0] = torch.matmul(torch.matmul(y_t,D), ONE)
-        return x_batch
+        y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
+        b, c, N = y.shape
+        y = y.reshape(b,c,1,N) # convert to a col vector
 
-    def solve(self, W_batch):
-        # W_batch = torch.squeeze(W_batch, 1)
-        output = torch.zeros(32,1,1024) #, dtype=torch.float32, requires_grad=True)
-        for i in range(len(W_batch)):
-            W = torch.add(W_batch[i,0], self.constant) # Each batch is passed as [batch, channels, width, height], add a small constant to avoid NaN
+        d = torch.einsum('bcij->bcj', x) # eqv to x.sum(0) --- d vector
+        D = torch.diag_embed(d) # D = matrix with d on diagonal
+        ONE = torch.ones(b,c,1,N) # create a col vector of ones - shape = (32, 1, 1, N)
 
-            D = torch.diag(torch.sum(W, 0))
-            D_half_inv = torch.diag(1.0 / torch.sqrt(torch.sum(W, 0)))
-            M = torch.matmul(D_half_inv, torch.matmul((D - W), D_half_inv))
+        # No need to transpose y, as the vector multiplication will be the same for 1D tensors
 
-            # M is the normalised laplacian
+        # return the constraint calculation, squeezed to output size
+        return torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bckj->bcik', y, D), ONE).squeeze(-2)
 
-            (w, v) = torch.linalg.eigh(M)
-            # TODO: Operate eigh across batch dimensions (it only operates on the last two dimensions...)
-            # TODO: ... this means changing everything into einsum operations! this way it will all work?
-            # TODO: because the without batch version has grad_fn with eigh as part of it.. therefore it should probably work!
+    def solve(self, A):
+        """ TODO: pass a parameter to avoid hardcoded output dimensions """
+        out_size = 32
+        # Implementation notes:
+        # - requires einsum's to act on batch. Otherwise torch complains about tensors not being in graph being differentiated
+        # - D_inv_sqrt calculates the inv sqrt of diagonal only to avoid division by zero
 
-            #find index of second smallest eigenvalue
-            index = torch.argsort(w)[1] # arg sort not neccessary, as this eigh returns sorted already...
+        # obtain the batch and image size (sqrt of x/y to get out_size?)
+        b,c,x,y = A.shape
 
-            v_partition = v[:, index]
-            # instead of the sign of a digit being the binary split, let the NN learn it
-            # v_partition = torch.sign(v_partition)
+        # can also replace bc with ...
+        d = torch.einsum('bcij->bcj', A) # eqv to A.sum(0) --- d vector
+        D = torch.diag_embed(d) # D = matrix with d on diagonal
+        D_inv_sqrt = torch.diag_embed(d.pow(-0.5)) # Don't calculate inverse sqrt of 0 entries (non diagonals)
+
+        L = (D-A) # Laplacian matrix
+        # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
+        L_norm = torch.einsum('bcij,bcjk->bcik', torch.einsum('bcij,bcjk->bcik', D_inv_sqrt , L) , D_inv_sqrt)
+
+        # Solve eigenvectors and eigenvalues
+        (w, v) = torch.linalg.eigh(L_norm)
         
-            # return the eigenvector and a blank context
-            output[i, 0] = v_partition#.view(32,32)
-        return output, None
+        # Returns the second smallest eigenvector (and possibly more if num_eigs > 1)
+        # eigenvector(s) reshaped to match original image size
+        num_eigs = 1
+        return v.narrow(-2, 1, num_eigs).squeeze(1).reshape(b, num_eigs, out_size, out_size), None
     
     def test(self, x, y):
         """ Test gradient """
