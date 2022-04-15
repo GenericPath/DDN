@@ -6,7 +6,9 @@ def main():
     constant = 1e-5
 
     if main: # Batched matrix version
-        A = torch.randn(32,1,32,32) # real 32x32 image input
+        A = torch.randn(32,1,1024,1024) # real 32x32 image input
+        b,c,x,y = A.shape
+
         A = torch.nn.functional.relu(A, inplace=True) # enforce positive constraint
         A_t = torch.einsum('bcij->bcji', A) # transpose of batched matrix
         A = torch.matmul(A, A_t) # to create a positive semi-definite matrix
@@ -16,16 +18,23 @@ def main():
         # can also replace bc with ...
         d = torch.einsum('bcij->bcj', A) # == A.sum(0) --- d vector
         D = torch.diag_embed(d) # D = matrix with d on diagonal
-        D_inv_sqrt = torch.diag_embed(1.0 / torch.sqrt(d))
+        D_inv_sqrt = torch.diag_embed(d.pow(-0.5)) # Don't calculate inverse sqrt of 0 entries (non diagonals)
 
-        L = (D-A)
+        L = (D-A) # Laplacian matrix
+        # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
         L_norm = torch.einsum('bcij,bcjk->bcik', torch.einsum('bcij,bcjk->bcik', D_inv_sqrt , L) , D_inv_sqrt)
 
         # Solve eigenvectors and eigenvalues
         (w, v) = torch.linalg.eigh(L_norm)
+        
+        # Returns the computed eigenvectors for the normalised laplacian
+        # this is the second smallest eigenvector, and above.
 
-        print('done')
-
+        # the eigenvector is reshaped to match the expected inputs for a conv net
+        # each of these new images represents some binary segmentation
+        # defaults to the second smallest eigenvector only, and as such is a binary segmentation
+        num_eigs = 1
+        return v.narrow(v, -2, 1, num_eigs).squeeze(1).reshape(b, num_eigs, x, y)
 
     else: # No batches version
         # Generate a random positive semi-definite matrix (M = A*A^T)
@@ -43,9 +52,6 @@ def main():
 
         # torch.einsum('bcij->bcji', A) # transpose A
         # torch.einsum('bcij,bcjk->bcik', A , B) # matrix multiplication
-
-        print(c)
-
 
 
     # torch.einsum('bcij->bcji', A) # transpose A
