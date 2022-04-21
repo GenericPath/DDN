@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import transforms
 
-# from tqdm import tqdm
+from tqdm import tqdm
 # import pickle
 import time, os
 
@@ -45,7 +45,7 @@ class Net(nn.Module):
 
 def train(logging=True,
           epochs: int = 20,
-          batch_size: int = 1,
+          batch_size: int = 2,
           learning_rate: float = 1e-4, # 0.0001
           momentum: float = 0.9, # unsure if this is a good value or not
           val_percent: float = 0.1,
@@ -123,7 +123,7 @@ def train(logging=True,
         # TRAIN
         net.train()
         start_time = time.time()
-        for index, (input_batch, target_batch) in enumerate(train_loader):
+        for index, (input_batch, target_batch) in enumerate(tqdm(train_loader)):
             input_batch, target_batch = input_batch.to(device), target_batch.to(device)
             output = net(input_batch)
             loss = criterion(output, target_batch)
@@ -134,7 +134,7 @@ def train(logging=True,
             optimizer.step()
             
             if logging:
-                print(f'Batch #{index},\ttime\t{time.time()-start_time}')
+                # print(f'Batch #{index},\ttime\t{time.time()-start_time}')
                 # calculate accuracy, output metrics
                 train_accuracy = output.eq(target_batch).float().mean()
                 writer.add_scalar("Train accuracy", train_accuracy, epoch)
