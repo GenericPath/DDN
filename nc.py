@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import cv2
 
-class NormalizedCuts(AbstractDeclarativeNode):
+class NormalizedCuts(EqConstDeclarativeNode):
     """
     A declarative node to embed Normalized Cuts into a Neural Network
     
@@ -67,7 +67,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
         D = torch.diag_embed(d) # D = matrix with d on diagonal
         ONE = torch.ones(b,c,1,N) # create a col vector of ones - shape = (32, 1, 1, N)
 
-        # No need to transpose y, as the vector multiplication will be the same for 1D tensors
+        # No need to transpose y, as the vector multiplication will be the same for 1D
 
         # return the constraint calculation, squeezed to output size
         return torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bckj->bcik', y, D), ONE).squeeze(-2)
