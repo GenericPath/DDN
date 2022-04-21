@@ -12,7 +12,7 @@ from torchvision import transforms
 
 from tqdm import tqdm
 # import pickle
-import time, os
+import time, os, random
 
 # locally defined imports
 from ddn.pytorch.node import DeclarativeLayer
@@ -43,14 +43,18 @@ class Net(nn.Module):
         x = self.postNC(x)
         return x
 
-def train(logging=True,
-          epochs: int = 20,
-          batch_size: int = 2,
-          learning_rate: float = 1e-4, # 0.0001
-          momentum: float = 0.9, # unsure if this is a good value or not
-          val_percent: float = 0.1,
-          save_checkpoint: bool = True,
-        ):
+def train(args):
+    hparams = {
+        "epochs":args.epochs,
+        "optim":"sgd", # this is hardcoded for now..
+        "lr": args.lr,
+        "momentum":args.momentum,
+        "batch": args.batch_size,
+        "shuffle":True,
+    }
+
+    val_percent = args.val
+    save_checkpoint = True
     
     device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
     print(f'Using device {device}')
@@ -60,20 +64,13 @@ def train(logging=True,
     path = 'data/'+dataset # location to store dataset
     dir_checkpoint = 'checkpoints/'+dataset
 
-    if logging:
-        run = "1"
-        writer = SummaryWriter(results, comment=run)
+    run = "2"
+    writer = SummaryWriter(results, comment=run)
     # add_hparams(hparam_dict, metric_dict, hparam_domain_discrete=None, run_name=None)
 
     # can do writer for a series of experiements done in a loop with lr*i etc etc..
-    hparams = {
-        "epochs":epochs,
-        "optim":"sgd", # this is hardcoded for now..
-        "lr": learning_rate,
-        "momentum":momentum,
-        "batch": batch_size,
-        "shuffle":True
-    }
+    # hparams = { ... }
+
     data(path) # make the dataset
     train_dataset = Simple01(path+'dataset', transform=transforms.ToTensor())
 
@@ -114,15 +111,15 @@ def train(logging=True,
     # IoU
     # precision recall curves (tensorboard use add_pr_curve)
     metrics = { # the key must be unique from anything added in add_scalar, so hparam/accuracy is used
-        'hparam/accuracy': 10, 
-        'hparam/loss': 10#*i as an example this could all be in a loop....
+        'hparam/accuracy': 0, 
+        'hparam/loss': 0#*i as an example this could all be in a loop....
     }
 
     best_accuracy = 0
     for epoch in range(epochs):
         # TRAIN
         net.train()
-        start_time = time.time()
+        # start_time = time.time()
         for index, (input_batch, target_batch) in enumerate(tqdm(train_loader)):
             input_batch, target_batch = input_batch.to(device), target_batch.to(device)
             output = net(input_batch)
@@ -133,13 +130,12 @@ def train(logging=True,
                 loss.backward()
             optimizer.step()
             
-            if logging:
-                # print(f'Batch #{index},\ttime\t{time.time()-start_time}')
-                # calculate accuracy, output metrics
-                train_accuracy = output.eq(target_batch).float().mean()
-                writer.add_scalar("Train accuracy", train_accuracy, epoch)
-                writer.add_scalar("Loss/train", loss.item(), epoch)
-                start_time = time.time()
+            # print(f'Batch #{index},\ttime\t{time.time()-start_time}')
+            # calculate accuracy, output metrics
+            train_accuracy = output.eq(target_batch).float().mean()
+            writer.add_scalar("Train accuracy", train_accuracy, epoch)
+            writer.add_scalar("Loss/train", loss.item(), epoch)
+            # start_time = time.time()
 
         # TEST AGAINST VALIDATION
         net.eval()
@@ -148,47 +144,44 @@ def train(logging=True,
                 input_batch, target_batch = input_batch.to(device), target_batch.to(device)
                 output = net(input_batch)
                 val_accuracy = output.eq(target_batch).float().mean()
-                if logging:
-                    writer.add_scalar("Validation accuracy", val_accuracy, epoch)
+
+                writer.add_scalar("Validation accuracy", val_accuracy, epoch)
 
         # SAVE IF IT IS THE BEST
         if save_checkpoint: # maybe only save if the accuracy is the highest we have seen so far...
-            if val_accuracy >= best_accuracy:
+            if val_accuracy >= best_accuracy and val_accuracy != 0:
                 if not os.path.exists(dir_checkpoint):
                     os.makedirs(dir_checkpoint)
                     print(dir_checkpoint + ' has been made')
                 torch.save(net.state_dict(), str(dir_checkpoint + f'checkpoint_epoch{epoch+1}.pth'))
                 print(f'Checkpoint {epoch + 1} saved!')
 
-    if logging:
-        writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
+    metrics['hparam/accuracy'] = val_accuracy
+    metrics['hparam/loss'] = loss
 
-# def get_args():
-#     parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
-#     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=5, help='Number of epochs')
-#     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=1, help='Batch size')
-#     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-5,
-#                         help='Learning rate', dest='lr')
-#     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-#     parser.add_argument('--scale', '-s', type=float, default=0.5, help='Downscaling factor of the images')
-#     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
-#                         help='Percent of the data that is used as validation (0-100)')
-#     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
-#     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
+    writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
 
-#     return parser.parse_args()
+def get_args():
+    parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
+    parser.add_argument('--epochs', '-e', metavar='E', type=int, default=20, help='Number of epochs')
+    parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=2, help='Batch size')
+    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-4,
+                        help='Learning rate', dest='lr')
+    parser.add_argument('--momentum', '-m', metavar='M', type=float, default=0.9, help='momentum')
+    # parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
+    parser.add_argument('--validation', '-v', dest='val', type=float, default=0.1,
+                        help='Percent of the data that is used as validation (0-1)')
+    parser.add_argument('--seed', '-s', metavar='S', type=int, default=0, help='Seed to get consistent outcomes')
+
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    # get_args()
-    # a = torch.randn(32, 1, 100, 100, requires_grad=True)
-    # node = NormalizedCuts()
-    # a = a.detach()
-    # y,_ = node.solve(a)
+    args = get_args()
 
-    # if args.seed is not None:
-    #     random.seed(args.seed)
-    #     torch.manual_seed(args.seed)
-    #     cudnn.deterministic = True
+    if args.seed is not None:
+        random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        torch.use_deterministic_algorithms(True)
 
-    train()
+    train(args)
