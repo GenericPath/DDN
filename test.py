@@ -123,8 +123,7 @@ def train(logging=True,
         # TRAIN
         net.train()
         start_time = time.time()
-        for index, batch in train_loader:
-            input_batch, target_batch = batch
+        for index, (input_batch, target_batch) in enumerate(train_loader):
             input_batch, target_batch = input_batch.to(device), target_batch.to(device)
             output = net(input_batch)
             loss = criterion(output, target_batch)
