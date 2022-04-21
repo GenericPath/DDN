@@ -43,7 +43,7 @@ class Net(nn.Module):
         x = self.postNC(x)
         return x
 
-def train(logging=False,
+def train(logging=True,
           epochs: int = 20,
           batch_size: int = 1,
           learning_rate: float = 1e-4, # 0.0001
@@ -123,7 +123,8 @@ def train(logging=False,
         # TRAIN
         net.train()
         start_time = time.time()
-        for input_batch, target_batch in train_loader:
+        for index, batch in train_loader:
+            input_batch, target_batch = batch
             input_batch, target_batch = input_batch.to(device), target_batch.to(device)
             output = net(input_batch)
             loss = criterion(output, target_batch)
@@ -133,12 +134,13 @@ def train(logging=False,
                 loss.backward()
             optimizer.step()
             
-            print(f'Batch time\t{time.time()-start_time}')
-            # calculate accuracy, output metrics
-            train_accuracy = output.eq(target_batch).float().mean()
-            writer.add_scalar("Train accuracy", train_accuracy, epoch)
-            writer.add_scalar("Loss/train", loss.item(), epoch)
-            start_time = time.time()
+            if logging:
+                print(f'Batch #{index},\ttime\t{time.time()-start_time}')
+                # calculate accuracy, output metrics
+                train_accuracy = output.eq(target_batch).float().mean()
+                writer.add_scalar("Train accuracy", train_accuracy, epoch)
+                writer.add_scalar("Loss/train", loss.item(), epoch)
+                start_time = time.time()
 
         # TEST AGAINST VALIDATION
         net.eval()
@@ -147,12 +149,13 @@ def train(logging=False,
                 input_batch, target_batch = input_batch.to(device), target_batch.to(device)
                 output = net(input_batch)
                 val_accuracy = output.eq(target_batch).float().mean()
-                writer.add_scalar("Validation accuracy", val_accuracy, epoch)
+                if logging:
+                    writer.add_scalar("Validation accuracy", val_accuracy, epoch)
 
         # SAVE IF IT IS THE BEST
         if save_checkpoint: # maybe only save if the accuracy is the highest we have seen so far...
             if val_accuracy >= best_accuracy:
-                torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch + 1)))
+                torch.save(net.state_dict(), str(dir_checkpoint + f'checkpoint_epoch{epoch+1}.pth'))
                 print(f'Checkpoint {epoch + 1} saved!')
 
     if logging:
