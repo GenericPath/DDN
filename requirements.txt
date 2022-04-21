@@ -11,5 +11,6 @@ matplotlib
 ipykernel
 ipywidgets
 scikit-image
+tqdm
 
 argparse
