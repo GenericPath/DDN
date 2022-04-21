@@ -52,7 +52,7 @@ def train(logging=False,
           save_checkpoint: bool = True,
         ):
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
     print(f'Using device {device}')
 
     dataset = 'simple01/'
@@ -94,7 +94,7 @@ def train(logging=False,
     # print(y.shape)
     # print('Dataset : %d EA \nDataLoader : %d SET' % (len(train_dataset),len(train_loader)))
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+    torch.backends.cudnn.benchmark = True
     net = Net()
     net = net.to(device=device)
     criterion = nn.BCEWithLogitsLoss()
@@ -124,6 +124,7 @@ def train(logging=False,
         net.train()
         start_time = time.time()
         for input_batch, target_batch in train_loader:
+            input_batch, target_batch = input_batch.to(device), target_batch.to(device)
             output = net(input_batch)
             loss = criterion(output, target_batch)
             # Compute gradient and do optimizer step
@@ -143,6 +144,7 @@ def train(logging=False,
         net.eval()
         with torch.no_grad():
             for input_batch, target_batch in val_loader:
+                input_batch, target_batch = input_batch.to(device), target_batch.to(device)
                 output = net(input_batch)
                 val_accuracy = output.eq(target_batch).float().mean()
                 writer.add_scalar("Validation accuracy", val_accuracy, epoch)
