@@ -12,7 +12,7 @@ from torchvision import transforms
 
 # from tqdm import tqdm
 # import pickle
-import time
+import time, os
 
 # locally defined imports
 from ddn.pytorch.node import DeclarativeLayer
@@ -94,7 +94,9 @@ def train(logging=False,
     # print(y.shape)
     # print('Dataset : %d EA \nDataLoader : %d SET' % (len(train_dataset),len(train_loader)))
 
+    os.environ["CUDA_VISIBLE_DEVICES"] = '1'
     net = Net()
+    net = net.to(device=device)
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.SGD(net.parameters(), lr=hparams['lr'], momentum=hparams['momentum'])
 
