@@ -45,7 +45,7 @@ class Net(nn.Module):
 
 def train(logging=False,
           epochs: int = 20,
-          batch_size: int = 32,
+          batch_size: int = 1,
           learning_rate: float = 1e-4, # 0.0001
           momentum: float = 0.9, # unsure if this is a good value or not
           val_percent: float = 0.1,
