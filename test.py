@@ -154,6 +154,9 @@ def train(logging=True,
         # SAVE IF IT IS THE BEST
         if save_checkpoint: # maybe only save if the accuracy is the highest we have seen so far...
             if val_accuracy >= best_accuracy:
+                if not os.path.exists(dir_checkpoint):
+                    os.makedirs(dir_checkpoint)
+                    print(dir_checkpoint + ' has been made')
                 torch.save(net.state_dict(), str(dir_checkpoint + f'checkpoint_epoch{epoch+1}.pth'))
                 print(f'Checkpoint {epoch + 1} saved!')
 
