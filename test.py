@@ -116,7 +116,7 @@ def train(args):
     }
 
     best_accuracy = 0
-    for epoch in range(epochs):
+    for epoch in range(args.epochs):
         # TRAIN
         net.train()
         # start_time = time.time()
