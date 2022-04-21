@@ -182,6 +182,6 @@ if __name__ == '__main__':
     if args.seed is not None:
         random.seed(args.seed)
         torch.manual_seed(args.seed)
-        torch.use_deterministic_algorithms(True)
+        # torch.use_deterministic_algorithms(True)
 
     train(args)
