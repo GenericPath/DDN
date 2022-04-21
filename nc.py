@@ -64,8 +64,8 @@ class NormalizedCuts(EqConstDeclarativeNode):
         y = y.reshape(b,c,1,N) # convert to a col vector
 
         d = torch.einsum('bcij->bcj', x) # eqv to x.sum(0) --- d vector
-        D = torch.diag_embed(d) # D = matrix with d on diagonal
-        ONE = torch.ones(b,c,1,N) # create a col vector of ones - shape = (32, 1, 1, N)
+        D = torch.diag_embed(d).to(device=y.device) # D = matrix with d on diagonal
+        ONE = torch.ones(b,c,1,N).to(device=y.device) # create a col vector of ones - shape = (32, 1, 1, N)
 
         # No need to transpose y, as the vector multiplication will be the same for 1D
 
