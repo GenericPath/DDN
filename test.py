@@ -65,6 +65,12 @@ def train(args):
     dir_checkpoint = 'checkpoints/'+dataset
 
     run = "2"
+    if args.name is not None:
+        results = results + args.name + '/'
+        if not os.path.exists(results):
+                    os.makedirs(results)
+                    print(results + ' has been made')
+        
     writer = SummaryWriter(results, comment=run)
     # add_hparams(hparam_dict, metric_dict, hparam_domain_discrete=None, run_name=None)
 
@@ -178,6 +184,7 @@ def train(args):
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train the UNet on images and binary target masks')
+    parser.add_argument('--name', '-n', type=str, default=None, help='Tensorboard run name')
     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=20, help='Number of epochs')
     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=1, help='Batch size')
     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-4,
