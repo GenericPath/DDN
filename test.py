@@ -132,9 +132,13 @@ def train(args):
             
             # print(f'Batch #{index},\ttime\t{time.time()-start_time}')
             # calculate accuracy, output metrics
+            global_step = epoch * len(train_loader) + index
+
+            output = (output > 0.5).float()
             train_accuracy = output.eq(target_batch).float().mean()
-            writer.add_scalar("Train accuracy", train_accuracy, epoch)
-            writer.add_scalar("Loss/train", loss.item(), epoch)
+            
+            writer.add_scalar("Train accuracy", train_accuracy, global_step=global_step)
+            writer.add_scalar("Loss/train", loss.item(), global_step=global_step)
             # start_time = time.time()
 
         # TEST AGAINST VALIDATION
@@ -162,14 +166,14 @@ def train(args):
     writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
+    parser = argparse.ArgumentParser(description='Train the UNet on images and binary target masks')
     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=20, help='Number of epochs')
     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=2, help='Batch size')
     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-4,
                         help='Learning rate', dest='lr')
     parser.add_argument('--momentum', '-m', metavar='M', type=float, default=0.9, help='momentum')
     # parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--validation', '-v', dest='val', type=float, default=0.1,
+    parser.add_argument('--validation', '-v', dest='val', type=float, default=0.2,
                         help='Percent of the data that is used as validation (0-1)')
     parser.add_argument('--seed', '-s', metavar='S', type=int, default=0, help='Seed to get consistent outcomes')
 
