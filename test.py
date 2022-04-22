@@ -148,13 +148,18 @@ def train(args):
 
         # TEST AGAINST VALIDATION
         net.eval()
+        val_epoch_loss = 0
         with torch.no_grad():
             for input_batch, target_batch in val_loader:
                 input_batch, target_batch = input_batch.to(device), target_batch.to(device)
+
+                val_epoch_loss = criterion(output, target_batch) / len(val_loader)
+
                 output = (output > 0.5).float()
                 output = net(input_batch)
                 val_accuracy = output.eq(target_batch).float().mean()
-
+                
+                writer.add_scalar("Validation loss", val_epoch_loss, epoch)
                 writer.add_scalar("Validation accuracy", val_accuracy, epoch)
 
         # SAVE IF IT IS THE BEST
