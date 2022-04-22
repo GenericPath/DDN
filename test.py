@@ -119,11 +119,13 @@ def train(args):
     for epoch in range(args.epochs):
         # TRAIN
         net.train()
+        per_epoch_loss = 0
         # start_time = time.time()
         for index, (input_batch, target_batch) in enumerate(tqdm(train_loader)):
             input_batch, target_batch = input_batch.to(device), target_batch.to(device)
             output = net(input_batch)
             loss = criterion(output, target_batch)
+            per_epoch_loss += loss
             # Compute gradient and do optimizer step
             optimizer.zero_grad()
             if not torch.isnan(loss).any():
@@ -140,6 +142,9 @@ def train(args):
             writer.add_scalar("Train accuracy", train_accuracy, global_step=global_step)
             writer.add_scalar("Loss/train", loss.item(), global_step=global_step)
             # start_time = time.time()
+        
+        per_epoch_loss /= index
+        writer.add_scalar("Average loss", per_epoch_loss, global_step=epoch)
 
         # TEST AGAINST VALIDATION
         net.eval()
