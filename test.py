@@ -146,6 +146,7 @@ def train(args):
         with torch.no_grad():
             for input_batch, target_batch in val_loader:
                 input_batch, target_batch = input_batch.to(device), target_batch.to(device)
+                output = (output > 0.5).float()
                 output = net(input_batch)
                 val_accuracy = output.eq(target_batch).float().mean()
 

@@ -35,12 +35,12 @@ class PostNC(nn.Module):
         self.block1 = self.conv_block(c_in=1, c_out=128, kernel_size=3, stride=1, padding=1)
         self.block2 = self.conv_block(c_in=128, c_out=256, kernel_size=3, stride=1, padding=1)
         self.lastcnn = nn.Conv2d(in_channels=256, out_channels=1, kernel_size=3, stride=1, padding=1)
-        self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
     def forward(self, x):
         x = x.view(x.size(0), 1, 32, 32)
         x = self.block1(x)
         x = self.block2(x)
         x = self.lastcnn(x)
+        x = torch.sigmoid(x)
         return x
     def conv_block(self, c_in, c_out, **kwargs):
         seq_block = nn.Sequential(
