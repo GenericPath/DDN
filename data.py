@@ -9,6 +9,8 @@ def data(path, total_images=300):
     """ Generate a simple dataset (if it doesn't already exist) """
     img_size = (32,32) # image size (w,h)
 
+    path = path + str(total_images) + '/'
+
     if not os.path.exists(path):
         os.makedirs(path)
         print(path + ' has been made')

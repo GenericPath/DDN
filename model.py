@@ -30,9 +30,9 @@ except:
     pass
 
 class Net(nn.Module):
-    def __init__(self):
+    def __init__(self, args):
         super(Net, self).__init__()
-        self.preNC = PreNC()
+        self.preNC = PreNC(args)
         self.nc = NormalizedCuts(eps=1) # eps sets the absolute difference between objective solutions and 0
         self.decl = DeclarativeLayer(self.nc) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
         self.postNC = PostNC()
@@ -44,14 +44,7 @@ class Net(nn.Module):
         return x
 
 def train(args):
-    hparams = {
-        "epochs":args.epochs,
-        "optim":"sgd", # this is hardcoded for now..
-        "lr": args.lr,
-        "momentum":args.momentum,
-        "batch": args.batch_size,
-        "shuffle":True,
-    }
+    hparams = vars(args)
 
     val_percent = args.val
     save_checkpoint = True
@@ -77,7 +70,7 @@ def train(args):
     # can do writer for a series of experiements done in a loop with lr*i etc etc..
     # hparams = { ... }
 
-    data(path) # make the dataset
+    data(path, args.total_images) # make the dataset
     train_dataset = Simple01(path+'dataset', transform=transforms.ToTensor())
 
     print(f'Total dataset size {len(train_dataset)}')
@@ -87,9 +80,9 @@ def train(args):
 
     train_set, val_set = random_split(train_dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
     train_loader = torch.utils.data.DataLoader(train_set, pin_memory=True,
-                                                batch_size=hparams['batch'], shuffle=hparams['shuffle'])
+                                                batch_size=args.batch_size, shuffle=args.shuffle)
     val_loader = torch.utils.data.DataLoader(val_set, pin_memory=True,
-                                                batch_size=hparams['batch'], shuffle=hparams['shuffle'])
+                                                batch_size=args.batch_size, shuffle=args.shuffle)
     
     # Test dataset shapes
     # x,y = next(iter(train_loader))
@@ -98,10 +91,10 @@ def train(args):
     # print('Dataset : %d EA \nDataLoader : %d SET' % (len(train_dataset),len(train_loader)))
 
     torch.backends.cudnn.benchmark = True
-    net = Net()
+    net = Net(args)
     net = net.to(device=device)
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.SGD(net.parameters(), lr=hparams['lr'], momentum=hparams['momentum'])
+    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum)
 
     # visualise predictions throughout training
     # from https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html
@@ -145,12 +138,12 @@ def train(args):
             output = (output > 0.5).float()
             train_accuracy = output.eq(target_batch).float().mean()
             
-            writer.add_scalar("Train accuracy", train_accuracy, global_step=global_step)
+            writer.add_scalar("Acc/train", train_accuracy, global_step=global_step)
             writer.add_scalar("Loss/train", loss.item(), global_step=global_step)
             # start_time = time.time()
         
         per_epoch_loss /= index
-        writer.add_scalar("Average loss", per_epoch_loss, global_step=epoch)
+        writer.add_scalar("AvgLoss/train", per_epoch_loss, global_step=epoch)
 
         # TEST AGAINST VALIDATION
         net.eval()
@@ -165,19 +158,20 @@ def train(args):
                 output = net(input_batch)
                 val_accuracy = output.eq(target_batch).float().mean()
                 
-                writer.add_scalar("Validation loss", val_epoch_loss, epoch)
-                writer.add_scalar("Validation accuracy", val_accuracy, epoch)
+                writer.add_scalar("Loss/val", val_epoch_loss, epoch)
+                writer.add_scalar("Acc/val", val_accuracy, epoch)
 
         # SAVE IF IT IS THE BEST
         if save_checkpoint: # maybe only save if the accuracy is the highest we have seen so far...
             if val_accuracy >= best_accuracy and val_accuracy != 0:
+                best_accuracy = val_accuracy
                 if not os.path.exists(dir_checkpoint):
                     os.makedirs(dir_checkpoint)
                     print(dir_checkpoint + ' has been made')
                 torch.save(net.state_dict(), str(dir_checkpoint + f'checkpoint_epoch{epoch+1}.pth'))
                 print(f'Checkpoint {epoch + 1} saved!')
 
-    metrics['hparam/accuracy'] = val_accuracy
+    metrics['hparam/accuracy'] = best_accuracy
     metrics['hparam/loss'] = loss
 
     writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
@@ -187,13 +181,20 @@ def get_args():
     parser.add_argument('--name', '-n', type=str, default=None, help='Tensorboard run name')
     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=20, help='Number of epochs')
     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=1, help='Batch size')
-    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-4,
+    parser.add_argument('--learning-rate', '-lr', metavar='LR', type=float, default=1e-4,
                         help='Learning rate', dest='lr')
     parser.add_argument('--momentum', '-m', metavar='M', type=float, default=0.9, help='momentum')
     # parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--validation', '-v', dest='val', type=float, default=0.2,
+    parser.add_argument('--validation', '-v', dest='val', type=float, default=0.1,
                         help='Percent of the data that is used as validation (0-1)')
     parser.add_argument('--seed', '-s', metavar='S', type=int, default=0, help='Seed to get consistent outcomes')
+    parser.add_argument('--total-images', '-ti', metavar='C', type=int, default=300, dest='total_images', help='total number of images in dataset')
+    parser.add_argument('--net-size', '-ns', metavar='[...]', nargs='+', type=int, default="1,128,256,512,1024", dest='net_size', help='number of filters for the 3 layers')
+    
+    # currently no options to use
+    parser.add_argument('--optim', '-o', metavar='O', type=str, default='sgd', dest='optim', help='optimiser used')
+    parser.add_argument('--shuffle', '-shf', type=bool, default=True, dest='shuffle', help='shuffle batches')
+
 
     return parser.parse_args()
 
