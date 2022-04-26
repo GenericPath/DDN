@@ -61,16 +61,21 @@ class NormalizedCuts(EqConstDeclarativeNode):
         """
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
         b, c, N = y.shape
-        y = y.reshape(b,c,1,N) # convert to a col vector
+        y = y.reshape(b,c,1,N) # convert to a col vector (y^T)
 
         d = torch.einsum('bcij->bcj', x) # eqv to x.sum(0) --- d vector
         D = torch.diag_embed(d).to(device=y.device) # D = matrix with d on diagonal
-        ONE = torch.ones(b,c,1,N).to(device=y.device) # create a col vector of ones - shape = (32, 1, 1, N)
+        ONE = torch.ones(b,c,N,1).to(device=y.device) # create a vector of ones
 
-        # No need to transpose y, as the vector multiplication will be the same for 1D
+        # MATRIX SIZES (for sanity check)
+        # B,C,1,N
+        # B,C,N,N
+        # = B,C,1,N
+        # B,C,N,1
+        # = B,C,1,1
 
         # return the constraint calculation, squeezed to output size
-        return torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bckj->bcik', y, D), ONE).squeeze(-2)
+        return torch.einsum('bcIK,bcKJ->bcIJ', torch.einsum('bcIK,bcKJ->bcIJ',y, D), ONE).squeeze(-2)
 
     def solve(self, A):
         """ 
@@ -105,6 +110,7 @@ class NormalizedCuts(EqConstDeclarativeNode):
         # Returns the second smallest eigenvector (and possibly more if num_eigs > 1)
         # eigenvector(s) reshaped to match original image size
         num_eigs = 1
+        # TODO: verify if the eig is the correct one... (narrowed to index 1 not index 0, but possible it already removes this one)
         return v.narrow(-2, 1, num_eigs).squeeze(1).reshape(b, num_eigs, out_size, out_size), None
     
     def test(self, x, y):
@@ -115,3 +121,25 @@ class NormalizedCuts(EqConstDeclarativeNode):
         # Compute partial derivative of f wrt y at (xs,y):
         fY = grad(f, y, grad_outputs=torch.ones_like(f), create_graph=True)
         return fY
+
+if __name__ == "__main__":
+    # 1. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
+    A = torch.randn(32,1,1024,1024, requires_grad=True) # real 32x32 image input
+    b,c,x,y = A.shape
+
+    A = torch.nn.functional.relu(A) # enforce positive constraint
+    A_t = torch.einsum('bcij->bcji', A) # transpose of batched matrix
+    A = torch.matmul(A, A_t) # to create a positive semi-definite matrix
+
+    node = NormalizedCuts()
+    y,misc = node.solve(A)
+    node.test(A,y=y)
+
+    # 2. Confirm the node solves the correct problems
+    eqconstBool = issubclass(NormalizedCuts, EqConstDeclarativeNode) # If AbstractDeclarativeNode then false, remove this later?...
+    fSolved = node.objective(A, y)
+    print(f'Max: {torch.max(fSolved)}, Min: {torch.min(fSolved)}, Mean: {torch.mean(fSolved)}, std var: {torch.std(fSolved)}')
+    if eqconstBool:
+        # TODO: verify why this is not correct?
+        fConsts = node.equality_constraints(A, y)
+        print(f'Max: {torch.max(fConsts)}, Min: {torch.min(fConsts)}, Mean: {torch.mean(fConsts)}, std var: {torch.std(fConsts)}')
