@@ -173,9 +173,12 @@ def train(args):
                 torch.save(net.state_dict(), str(dir_checkpoint + f'checkpoint_epoch{epoch+1}.pth'))
                 print(f'Checkpoint {epoch + 1} saved!')
 
+    # Create metrics, and convert hparams to strings to store with tensorboard
     metrics['hparam/accuracy'] = best_accuracy
-    metrics['hparam/loss'] = loss
-    # FIXME: this has a bug for add_hparams
+    metrics['hparam/loss'] = loss.item()
+    for keys in hparams:
+            hparams[keys] = str(hparams[keys])
+    hparams = {str(j) : str(i) for i,j in enumerate(hparams)}
     writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
 
 def get_args():
