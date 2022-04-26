@@ -156,8 +156,8 @@ def train(args):
 
                 val_epoch_loss = criterion(output, target_batch) / len(val_loader)
 
-                output = (output > 0.5).float()
                 output = net(input_batch)
+                output = (output > 0.5).float()
                 val_accuracy = output.eq(target_batch).float().mean()
                 
                 writer.add_scalar("Loss/val", val_epoch_loss, epoch)
