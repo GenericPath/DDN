@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import cv2
 
-class NormalizedCuts(EqConstDeclarativeNode):
+class NormalizedCuts(AbstractDeclarativeNode):
     """
     A declarative node to embed Normalized Cuts into a Neural Network
     
