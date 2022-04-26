@@ -59,10 +59,15 @@ def train(args):
 
     run = "2"
     if args.name is not None:
+        dir_checkpoint = dir_checkpoint + args.name + '/'
         results = results + args.name + '/'
         if not os.path.exists(results):
                     os.makedirs(results)
                     print(results + ' has been made')
+        if not os.path.exists(dir_checkpoint):
+                    os.makedirs(dir_checkpoint)
+                    print(dir_checkpoint + ' has been made')
+        
         
     writer = SummaryWriter(results, comment=run)
     # add_hparams(hparam_dict, metric_dict, hparam_domain_discrete=None, run_name=None)
@@ -186,7 +191,7 @@ def train(args):
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train the UNet on images and binary target masks')
-    parser.add_argument('--name', '-n', type=str, default=None, help='Tensorboard run name')
+    parser.add_argument('--name', '-n', type=str, default="testing1", help='Tensorboard run name')
     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=20, help='Number of epochs')
     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=1, help='Batch size')
     parser.add_argument('--learning-rate', '-lr', metavar='LR', type=float, default=1e-4,
@@ -197,7 +202,7 @@ def get_args():
                         help='Percent of the data that is used as validation (0-1)')
     parser.add_argument('--seed', '-s', metavar='S', type=int, default=0, help='Seed to get consistent outcomes')
     parser.add_argument('--total-images', '-ti', metavar='C', type=int, default=300, dest='total_images', help='total number of images in dataset')
-    parser.add_argument('--net-size', '-ns', metavar='[...]', nargs='+', type=int, default="1,128,256,512,1024", dest='net_size', help='number of filters for the 3 layers')
+    parser.add_argument('--net-size', '-ns', metavar='[...]', nargs='+', type=int, default=[1,128,256,512,1024], dest='net_size', help='number of filters for the 3 layers')
     parser.add_argument('--gpu-id', '-gpu', type=str, default='1', dest='gpu', help='which id gpu to utilise (if present)')
 
     # currently no options to use
