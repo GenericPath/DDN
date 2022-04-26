@@ -97,6 +97,7 @@ def train(args):
     net = net.to(device=device)
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5)
 
     # visualise predictions throughout training
     # from https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html
@@ -154,7 +155,9 @@ def train(args):
             for input_batch, target_batch in val_loader:
                 input_batch, target_batch = input_batch.to(device), target_batch.to(device)
 
-                val_epoch_loss = criterion(output, target_batch) / len(val_loader)
+                val_loss = criterion(output, target_batch)
+                val_epoch_loss = val_loss / len(val_loader)
+                scheduler.step(val_loss) # Reduce LR on plateu
 
                 output = net(input_batch)
                 output = (output > 0.5).float()
