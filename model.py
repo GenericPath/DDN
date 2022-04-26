@@ -49,7 +49,7 @@ def train(args):
     val_percent = args.val
     save_checkpoint = True
     
-    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
     print(f'Using device {device}')
 
     dataset = 'simple01/'
@@ -173,7 +173,7 @@ def train(args):
 
     metrics['hparam/accuracy'] = best_accuracy
     metrics['hparam/loss'] = loss
-
+    # FIXME: this has a bug for add_hparams
     writer.add_hparams(hparam_dict=hparams, metric_dict=metrics)
 
 def get_args():
@@ -190,7 +190,8 @@ def get_args():
     parser.add_argument('--seed', '-s', metavar='S', type=int, default=0, help='Seed to get consistent outcomes')
     parser.add_argument('--total-images', '-ti', metavar='C', type=int, default=300, dest='total_images', help='total number of images in dataset')
     parser.add_argument('--net-size', '-ns', metavar='[...]', nargs='+', type=int, default="1,128,256,512,1024", dest='net_size', help='number of filters for the 3 layers')
-    
+    parser.add_argument('--gpu-id', '-gpu', type=str, default='1', dest='gpu', help='which id gpu to utilise (if present)')
+
     # currently no options to use
     parser.add_argument('--optim', '-o', metavar='O', type=str, default='sgd', dest='optim', help='optimiser used')
     parser.add_argument('--shuffle', '-shf', type=bool, default=True, dest='shuffle', help='shuffle batches')
