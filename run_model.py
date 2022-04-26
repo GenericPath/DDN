@@ -20,7 +20,6 @@ for epoch in epochs:
                 for net_size in net_sizes:
                     i += 1
                     run_name = 'run' + str(i)
-                    print(run_name)
                     command = ["python", "model.py", 
                                 "-n", str(run_name),
                                 "-e", str(epoch),
@@ -32,6 +31,14 @@ for epoch in epochs:
                                 # "-v", val,
                                 # "-s", seed,
                                 # ""]
+                    print(command)
                     p = Popen(command)
                     (output, err) = p.communicate()
-    
+
+# Was also run on larger models, except they were all the 300 model.
+# also these may have been run on AbstractDeclarativeNode instead of EqConstrainedDeclarativeNode
+# ['python', 'model.py', '-n', 'run3', '-e', '30', '-b', '1', '-lr', '1e-08', '-ti', '300', '-ns', '1', '128', '256', '512', '1024']
+# ['python', 'model.py', '-n', 'run4', '-e', '30', '-b', '1', '-lr', '1e-08', '-ti', '300', '-ns', '1', '16', '32', '64', '1024']
+# ['python', 'model.py', '-n', 'run9', '-e', '30', '-b', '1', '-lr', '0.0001', '-ti', '300', '-ns', '1', '128', '256', '512', '1024']
+# ['python', 'model.py', '-n', 'run10', '-e', '30', '-b', '1', '-lr', '0.0001', '-ti', '300', '-ns', '1', '16', '32', '64', '1024']
+
