@@ -57,7 +57,7 @@ for epoch in epochs:
                     if total_images == 5000:
                         batch_size = 1 # just to ensure memory is good
                     i += 1
-                    run_name = 'run' + str(i)
+                    run_name = 'slowerAbs' + str(i)
                     command = ["python", "model.py", 
                                 "-n", str(run_name),
                                 "-e", str(epoch),
