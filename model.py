@@ -71,6 +71,8 @@ def train(args):
     # hparams = { ... }
 
     data(path, args.total_images) # make the dataset
+    path = path + str(args.total_images) + '/'
+
     train_dataset = Simple01(path+'dataset', transform=transforms.ToTensor())
 
     print(f'Total dataset size {len(train_dataset)}')
