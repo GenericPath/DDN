@@ -2,7 +2,7 @@ from subprocess import Popen
 
 # QUICK RUNS (for immediate results)
 epochs = [50]
-batch_sizes = [2]
+batch_sizes = [1]
 lrs = [1e-5, 1e-4, 1e-2]
 momentums = [0.9]
 vals = [0.1]
