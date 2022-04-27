@@ -1,5 +1,21 @@
 import torch
 import torch.nn as nn
+from nc import NormalizedCuts
+from ddn.pytorch.node import DeclarativeLayer
+
+class Net(nn.Module):
+    def __init__(self, args):
+        super(Net, self).__init__()
+        self.preNC = PreNC(args)
+        self.nc = NormalizedCuts(eps=1) # eps sets the absolute difference between objective solutions and 0
+        self.decl = DeclarativeLayer(self.nc) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
+        self.postNC = PostNC()
+
+    def forward(self, x):
+        x = self.preNC(x) # make the affinity matrix (or something else that works with)
+        x = self.decl(x) # check the size of this output...
+        x = self.postNC(x)
+        return x
 
 class PreNC(nn.Module):
     def __init__(self, args):
