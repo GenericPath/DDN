@@ -3,7 +3,7 @@ torch
 torchvision
 tensorboard
 numpy
-scipy==1.4.1
+scipy
 opencv-python
 # Used for jupyter notebooks
 jupyterlab
@@ -11,6 +11,7 @@ matplotlib
 ipykernel
 ipywidgets
 scikit-image
-tqdm
-
+# misc
+torch_tb_profiler
 argparse
+tqdm

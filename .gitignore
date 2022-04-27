@@ -1,6 +1,8 @@
-/data/*
-.ipynb_checkpoints/*
-.vscode/*
+.DS_Store
+data/
+.ipynb_checkpoints/
+.vscode/
 ignore/
 __pycache__
 experiments/
+checkpoints/
