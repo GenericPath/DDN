@@ -62,7 +62,8 @@ for epoch in epochs:
                                 "-lr", str(lr),
                                 "-ti", str(total_images),
                                 "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
-                                "-gpu", str(1)] # GPU-1 (hardcoded) is the assigned gpu for this research
+                                "-gpu", str(1),
+                                "--production", str(args.production)] # GPU-1 (hardcoded) is the assigned gpu for this research
                                 # "-m", momentum,
                                 # "-v", val,
                                 # "-s", seed,

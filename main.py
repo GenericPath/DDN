@@ -40,6 +40,8 @@ parser.add_argument('--dataset', type=str, default='simple01', help='dataset to 
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
 parser.add_argument('--test', action='store_true', help='Whether to test/evaluate or train')
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
+parser.add_argument('--production', default=False, type=bool, help='Production mode: If true run in a separate folder on a copy of the python scripts')
+
 
 def main():
     # Parse commandline arguments
@@ -54,10 +56,9 @@ def main():
     print(f'Using device {device}')
 
     if args.name:
-        results = results + args.name + '/'
+        results = args.name + '/'
         if not os.path.exists(results):
             os.makedirs(results)
-            print(results + ' has been made')
         args.writer = tb.SummaryWriter(results)
 
     # Create the model, loss, optimizer and scheduler

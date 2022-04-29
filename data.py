@@ -57,7 +57,6 @@ def data(path, total_images=300):
             
             name = path+"img"+str(i)+".png"
             out.save(name, "PNG")
-            print(name)
             images.append(name)
             
         output = [images, answers]
