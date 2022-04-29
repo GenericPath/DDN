@@ -26,7 +26,7 @@ parser.add_argument('--learning-rate', '-lr', metavar='LR', type=float, default=
 parser.add_argument('--momentum', '-m', metavar='M', type=float, default=0.9, help='momentum')
 parser.add_argument('--validation', '-v', dest='val', type=float, default=0.1,
                     help='Percent of the data that is used as validation (0-1)')
-parser.add_argument('--seed', '-s', metavar='S', type=int, default=0, help='Seed to get consistent outcomes')
+parser.add_argument('--seed', '-s', metavar='S', type=int, default=None, help='Seed to get consistent outcomes')
 parser.add_argument('--total-images', '-ti', metavar='N', type=int, default=300, dest='total_images', help='total number of images in dataset')
 parser.add_argument('--net-size', '-ns', metavar='[...]', nargs='+', type=int, default=[1,128,256,512,1024], dest='net_size', help='number of filters for the 3 layers')
 parser.add_argument('--gpu-id', '-gpu', type=str, default='1', dest='gpu', help='which id gpu to utilise (if present)')
@@ -63,7 +63,10 @@ def main():
     model = Net(args)
     model = model.to(device=device)
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    if args.optim == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    else:
+        optimizer = optim.Adam(model.parameters(), lr=args.lr) # TODO : add weight decay and betas as options
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5)
 
     # Load the weights of a saved network (if provided)
