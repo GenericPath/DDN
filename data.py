@@ -5,6 +5,33 @@ import numpy as np
 from PIL import Image
 import cv2
 
+from torchvision import transforms
+from torch.utils.data import random_split
+
+
+def get_datasets(args):
+    dataset = 'simple01/'
+    path = 'data/'+dataset # location to store dataset
+
+    data(path, args.total_images) # make the dataset
+    path = path + str(args.total_images) + '/'
+
+    train_dataset = Simple01(path+'dataset', transform=transforms.ToTensor())
+
+    print(f'Total dataset size {len(train_dataset)}')
+    # Training and Validation dataset
+    n_val = int(len(train_dataset) * args.val)
+    n_train = len(train_dataset) - n_val
+
+    train_set, val_set = random_split(train_dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0)) # Consistent splits for everything
+    train_loader = torch.utils.data.DataLoader(train_set, pin_memory=True,
+                                                batch_size=args.batch_size, shuffle=args.shuffle)
+    val_loader = torch.utils.data.DataLoader(val_set, pin_memory=True,
+                                                batch_size=args.batch_size, shuffle=args.shuffle)
+
+    return train_loader, val_loader
+
+
 def data(path, total_images=300):
     """ Generate a simple dataset (if it doesn't already exist) """
     img_size = (32,32) # image size (w,h)
