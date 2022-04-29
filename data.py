@@ -9,14 +9,13 @@ from torchvision import transforms
 from torch.utils.data import random_split
 
 
-def get_datasets(args):
-    dataset = 'simple01/'
-    path = 'data/'+dataset # location to store dataset
+def get_dataset(args):
+    append = '../../' if args.production else ''
+    path = append + 'data/' + args.dataset + '/' + str(args.total_images) + '/' # location to store dataset
 
     data(path, args.total_images) # make the dataset
-    path = path + str(args.total_images) + '/'
-
-    train_dataset = Simple01(path+'dataset', transform=transforms.ToTensor())
+    
+    train_dataset = Simple01(path+'dataset', transform=transforms.ToTensor()) #path/dataset is a pickle containing (image paths, targets)
 
     print(f'Total dataset size {len(train_dataset)}')
     # Training and Validation dataset
@@ -34,9 +33,7 @@ def get_datasets(args):
 
 def data(path, total_images=300):
     """ Generate a simple dataset (if it doesn't already exist) """
-    img_size = (32,32) # image size (w,h)
-
-    path = path + str(total_images) + '/'
+    img_size = (32,32) # image size (w,h) # TODO: make this an argument...
 
     if not os.path.exists(path):
         os.makedirs(path)
