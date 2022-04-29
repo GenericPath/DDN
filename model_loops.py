@@ -12,12 +12,14 @@ def test(val_loader, model, criterion):
             input_batch, target_batch = input_batch, target_batch
 
             output = model(input_batch)
-            output = (output > 0.5).float()
-            val_accuracy = output.eq(target_batch).float().mean()
             val_loss = criterion(output, target_batch)
 
+            output = (output > 0.5).float()
+            val_accuracy = output.eq(target_batch).float().mean()
+            
             avg_acc += val_accuracy
             avg_loss += val_loss.item()
+            
         avg_acc /= len(val_loader)
         avg_loss /= len(val_loader)
     return avg_acc, avg_loss
@@ -28,12 +30,13 @@ def validate(val_loader, model, device, criterion, scheduler):
         for input_batch, target_batch in val_loader:
             input_batch, target_batch = input_batch.to(device), target_batch.to(device)
 
+            output = model(input_batch)
             val_loss = criterion(output, target_batch)
             scheduler.step(val_loss) # Reduce LR on plateu
 
-            output = model(input_batch)
-            output = (output > 0.5).float()
+            output = (output > 0.5).float()         
             val_accuracy = output.eq(target_batch).float().mean()
+
     return val_accuracy, val_loss
 
 def train(train_loader, model, device, criterion, optimizer):
