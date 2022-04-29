@@ -34,10 +34,11 @@ parser.add_argument('--gpu-id', '-gpu', type=str, default='1', dest='gpu', help=
 # currently no options to use
 parser.add_argument('--optim', '-o', metavar='OPT', type=str, default='sgd', dest='optim', help='optimiser to use')
 parser.add_argument('--shuffle', type=bool, default=True, help='shuffle batches')
+parser.add_argument('--dataset', type=str, default='simple01', help='dataset to use')
 
 # newer
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
-parser.add_argument('--test', type=bool, default=False, help='Whether to test/evaluate or train')
+parser.add_argument('--test', action='store_true', help='Whether to test/evaluate or train')
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
 
 def main():
@@ -55,8 +56,8 @@ def main():
     if args.name:
         results = results + args.name + '/'
         if not os.path.exists(results):
-                    os.makedirs(results)
-                    print(results + ' has been made')
+            os.makedirs(results)
+            print(results + ' has been made')
         args.writer = tb.SummaryWriter(results)
 
     # Create the model, loss, optimizer and scheduler
