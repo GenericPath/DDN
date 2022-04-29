@@ -17,22 +17,30 @@ total_imageses = [300]
 net_sizes = [[1,128,256,512,1024]]
 
 script = 'main.py'
+folder = ""
+out_file = 'runs.txt'
 
 if args.production:
-    # Store the run (and scripts) in a month/day/ folder
-    folder = os.makedirs(time.strftime("%m/%d/"))
+    # Store the run (and scripts etc) in a month/day/ folder
+    folder = time.strftime("%m/%d/")
+    out_file = folder + out_file
     os.makedirs(time.strftime("%m/%d/"))
 
-    files_to_copy = [script, 'model.py', 'unetmini.py', 'nc.py', 'data.py']
+    files_to_copy = ['run_model.py', script, 'model.py', 'unetmini.py', 'nc.py', 'data.py']
 
 # TODO : make sure every file still works from within the new folders (copied to with copy2)
 # TODO : make data() utilise the global data folder not a local data folder
     # amd so any new dataset changes will go into a simple02 etc..
     # also change scripts to use a supplied dataset name?
 # TODO : otherwise transition the model stuff into main.. and then model.py can have all the train, test, val functions
-    # like in bpnpnet... (and the cool save checkpoint from it too!)
+    # like in bpnpnet... (and the cool save checkpoint from it too!
+# TODO : add profiling (torch.profiler) from pip install pytorch_tb_profiler or w/e
+# TODO : something else that i forgot about
+# TODO : run models that produce a 1024x4 (or however many) output.. which is then turned into the full size?
+    # or find papers that create a weight matrix
 
 i=0
+f = open(out_file, "a")
 for epoch in epochs:
     for batch_size in batch_sizes:
         for lr in lrs:
@@ -46,19 +54,20 @@ for epoch in epochs:
                         script = folder + script
 
                     run_name = 'run' + str(i)
-                    command = ["python", script, 
+                    command = ["python", folder + script, 
                                 "-n", str(run_name),
                                 "-e", str(epoch),
                                 "-b", str(batch_size),
                                 "-lr", str(lr),
                                 "-ti", str(total_images),
                                 "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
-                                "-gpu", str(1)]
+                                "-gpu", str(1)] # GPU-1 (hardcoded) is the assigned gpu for this research
                                 # "-m", momentum,
                                 # "-v", val,
                                 # "-s", seed,
                                 # ""]
                     print(command)
+                    f.write(run_name + ' ' + command)
                     p = Popen(command)
                     (output, err) = p.communicate()
 
