@@ -30,6 +30,10 @@ if args.production:
 
     files_to_copy = ['run_model.py', script, 'model.py', 'model_loops.py', 'nc.py', 'data.py', 'node.py']
 
+    for file in files_to_copy:
+        shutil.copy2(file, folder)
+    script = folder + script
+
 # TODO : add profiling (torch.profiler) from pip install pytorch_tb_profiler or w/e
 # TODO : run models that produce a 1024x4 (or however many) output.. which is then turned into the full size?
     # or find papers that create a weight matrix
@@ -41,11 +45,6 @@ for epoch in epochs:
             for total_images in total_imageses:
                 for net_size in net_sizes:
                     i += 1
-                    
-                    if args.production:
-                        for file in files_to_copy:
-                            shutil.copy2(file, folder)
-                        script = folder + script
 
                     run_name = 'run' + str(i)
                     command = ["python", script, 
