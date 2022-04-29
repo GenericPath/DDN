@@ -1,8 +1,10 @@
-from ddn.pytorch.node import *
 import torch
 import numpy as np
 from PIL import Image
 import cv2
+
+# local imports
+from node import *
 
 class NormalizedCuts(AbstractDeclarativeNode):
     """

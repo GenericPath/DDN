@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
+
+# local imports
 from nc import NormalizedCuts
-from ddn.pytorch.node import DeclarativeLayer
+from node import DeclarativeLayer
 
 class Net(nn.Module):
     def __init__(self, args):

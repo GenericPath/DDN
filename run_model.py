@@ -2,7 +2,8 @@ from subprocess import Popen
 import os, time, argparse, shutil
 
 parser = argparse.ArgumentParser(description='Runs a series of models with set configurations')
-parser.add_argument('--production', '-p', type=bool, default=False, dest='production', help='Production mode: If true run in a separate folder on a copy of the python scripts')
+parser.add_argument('--production', action='store_true',
+                        help='Production mode: If true run in a separate folder on a copy of the python scripts')
 
 args = parser.parse_args()
 
@@ -22,11 +23,12 @@ out_file = 'runs.txt'
 
 if args.production:
     # Store the run (and scripts etc) in a month/day/ folder
-    folder = time.strftime("%m/%d/")
+    folder = 'experiments/' + time.strftime("%m_%d_%H_%M/")
     out_file = folder + out_file
-    os.makedirs(time.strftime("%m/%d/"))
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
-    files_to_copy = ['run_model.py', script, 'model.py', 'unetmini.py', 'nc.py', 'data.py']
+    files_to_copy = ['run_model.py', script, 'model.py', 'model_loops.py', 'nc.py', 'data.py', 'node.py']
 
 # TODO : make sure every file still works from within the new folders (copied to with copy2)
 # TODO : make data() utilise the global data folder not a local data folder
@@ -40,7 +42,6 @@ if args.production:
     # or find papers that create a weight matrix
 
 i=0
-f = open(out_file, "a")
 for epoch in epochs:
     for batch_size in batch_sizes:
         for lr in lrs:
@@ -54,7 +55,7 @@ for epoch in epochs:
                         script = folder + script
 
                     run_name = 'run' + str(i)
-                    command = ["python", folder + script, 
+                    command = ["python", script, 
                                 "-n", str(run_name),
                                 "-e", str(epoch),
                                 "-b", str(batch_size),
@@ -67,7 +68,9 @@ for epoch in epochs:
                                 # "-s", seed,
                                 # ""]
                     print(command)
-                    f.write(run_name + ' ' + command)
+                    f = open(out_file, "a")
+                    f.write(run_name + ' ' + str(command))
+                    f.close()
                     p = Popen(command)
                     (output, err) = p.communicate()
 
