@@ -56,14 +56,14 @@ for epoch in epochs:
 
                     run_name = 'run' + str(i)
                     command = ["python", script, 
-                                "-n", str(run_name),
+                                "-n", folder + str(run_name),
                                 "-e", str(epoch),
                                 "-b", str(batch_size),
                                 "-lr", str(lr),
                                 "-ti", str(total_images),
                                 "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
-                                "-gpu", str(1),
-                                "--production", str(args.production)] # GPU-1 (hardcoded) is the assigned gpu for this research
+                                "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
+                                "--production", str(args.production)] 
                                 # "-m", momentum,
                                 # "-v", val,
                                 # "-s", seed,
