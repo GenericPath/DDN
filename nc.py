@@ -1,10 +1,24 @@
 import torch
 import numpy as np
-from PIL import Image
-import cv2
+import matplotlib as plt
 
 # local imports
 from node import *
+
+def manual_weight(name):
+    I = plt.imread(name)
+    x,y = I.shape
+    N = x*y
+    W = np.zeros((N,N))
+
+    I = I.flatten()
+
+    for u in range(N):
+        for v in range(N):
+            if np.linalg.norm(u-v) > 1: # 4-way connection
+                continue
+            W[u][v] = np.linalg.norm(I[u]-I[v])
+    return W
 
 class NormalizedCuts(AbstractDeclarativeNode):
     """

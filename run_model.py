@@ -37,6 +37,7 @@ if args.production:
 # TODO : add profiling (torch.profiler) from pip install pytorch_tb_profiler or w/e
 # TODO : run models that produce a 1024x4 (or however many) output.. which is then turned into the full size?
     # or find papers that create a weight matrix
+# TODO : add a dataset (for a non declarative network) to learn the weights matrix (e.g. guassian blur weights..)
 
 i=0
 for epoch in epochs:

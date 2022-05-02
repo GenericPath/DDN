@@ -8,14 +8,10 @@ import cv2
 from torchvision import transforms
 from torch.utils.data import random_split
 
+from nc import manual_weight
 
 def get_dataset(args):
-    append = '../../' if args.production else ''
-    path = append + 'data/' + args.dataset + '/' + str(args.total_images) + '/' # location to store dataset
-
-    data(path, args.total_images) # make the dataset
-    
-    train_dataset = Simple01(path+'dataset', transform=transforms.ToTensor()) #path/dataset is a pickle containing (image paths, targets)
+    train_dataset = SimpleDatasets(args, transform=transforms.ToTensor()) #path/dataset is a pickle containing (image paths, targets)
 
     print(f'Total dataset size {len(train_dataset)}')
     # Training and Validation dataset
@@ -31,9 +27,12 @@ def get_dataset(args):
     return train_loader, val_loader
 
 
-def data(path, total_images=300):
-    """ Generate a simple dataset (if it doesn't already exist) """
-    img_size = (32,32) # image size (w,h) # TODO: make this an argument...
+def data(path, args, img_size=(32,32)):
+    """ Generate a simple dataset (if it doesn't already exist) 
+    path - example 'data/simple01/'
+    total_images - total number of images to create for the dataset
+    image size - (w,h)
+    """
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -42,7 +41,7 @@ def data(path, total_images=300):
     if not os.path.isfile(path+'dataset'):
         images = []
         answers = []
-        for i in range(total_images):
+        for i in range(args.total_images):
             # L gives 8-bit pixels (0-255 range of white to black)
             w,h = (random.randint(img_size[0]//3, img_size[0]), random.randint(img_size[0]//3, img_size[0]))
             x,y = (random.randint(img_size[0]//3, img_size[0]), random.randint(img_size[0]//3, img_size[0]))
@@ -50,28 +49,36 @@ def data(path, total_images=300):
             xy = [(x-w//2,y-h//2), (x+w//2,y+h//2)]
             answer = np.zeros(img_size)
             answer[xy[0][0]:xy[1][0], xy[0][1]:xy[1][1]] = 1
-            answers.append(answer)
-            
+
             # L gives 8-bit pixels (0-255 range of white to black)
             out = Image.fromarray(np.uint8(answer * 255), 'L')
-            
+
             name = path+"img"+str(i)+".png"
             out.save(name, "PNG")
             images.append(name)
+                
+            if args.dataset == 'weights':
+                answers.append(manual_weight(name))
+            else:
+                answers.append(answer)
             
         output = [images, answers]
         with open(path+'dataset', 'wb') as fp:
             pickle.dump(output, fp)
         print("made the dataset file")
 
-class Simple01(Dataset):
+class SimpleDatasets(Dataset):
     """ Simple white background, black rectangle dataset """
     
-    def __init__(self, file, transform=None):
+    def __init__(self, args, transform=None):
         """
         file (string): Path to the pickle that contains [img paths, output arrays]
         """
-        with open (file, 'rb') as fp:
+        append = '../../' if args.production else ''
+        path = append + 'data/' + args.dataset + '/' + str(args.total_images) + '/' # location to store dataset
+        data(path, args) # make the dataset
+
+        with open (path+'dataset', 'rb') as fp:
             output = pickle.load(fp)
             self.images = output[0] # images
             self.segmentations = output[1] # segmentation
