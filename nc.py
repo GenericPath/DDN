@@ -10,10 +10,12 @@ def manual_weight(name, r=1, min=False):
     I = Image name
     r = radius for connections (defaults to 4-way connection with r=1)
     """
-    I = plt.imread(name)
+    if type(name) == str: I = plt.imread(name)
+    else: I = name
     x,y = I.shape
+    
     N = x*y
-    W = np.zeros((N,N))
+    W = torch.zeros((N,N))
 
     I = I.flatten()
 
@@ -25,11 +27,25 @@ def manual_weight(name, r=1, min=False):
     
     if min:
         diags = r+2
-        out = np.zeros((diags,N))
+        out = torch.zeros((diags,N))
         for index, i in enumerate(range(-(diags//2), (diags//2)+1)):
-            out[index] = np.resize(np.diag(W, i), N)
+            temp_diag = torch.diag(W,i)
+            pad = torch.zeros(N-len(temp_diag))
+            out[index] = torch.cat([temp_diag, pad])
         W = out
     return W
+
+def de_minW(out):
+    """
+    Returns the reconstructed weight matrix from a smaller version.
+    """
+    #b,c,
+    diags, N = out.shape
+    reconst = torch.zeros((N,N))
+    for index, i in enumerate(range(-(diags//2), (diags//2)+1)):            
+        temp = torch.diag(out[b][c][index][:N-abs(i)], i)
+        reconst = torch.add(reconst, temp)
+    return reconst.reshape(b,c,N,N)
 
 class NormalizedCuts(AbstractDeclarativeNode):
     """
@@ -56,11 +72,10 @@ class NormalizedCuts(AbstractDeclarativeNode):
             objectives: (b, c, x) Torch tensor,
                 batch, channels of objective function evaluations
         """
-        # i,j,k,l = x.shape
-        # if k != l:
-        #     a = torch.zeros(l)
-        #     for index, i in enumerate(range(-(k//2), (k//2)+1)):
-
+        i,j,k,l = x.shape
+        if k != l:
+            # then it is a minW style weight matrix
+            x = de_minW(x)
 
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
         b, c, N = y.shape
@@ -92,6 +107,11 @@ class NormalizedCuts(AbstractDeclarativeNode):
             equalities: (b, c, x) Torch tensor,
                 batch, channel of constraint calculation scalars
         """
+        i,j,k,l = x.shape
+        if k != l:
+            # then it is a minW style weight matrix
+            x = de_minW(x)
+
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
         b, c, N = y.shape
         y = y.reshape(b,c,1,N) # convert to a col vector (y^T)
@@ -156,6 +176,13 @@ class NormalizedCuts(AbstractDeclarativeNode):
         return fY
 
 if __name__ == "__main__":
+    A = torch.randn(32,32)
+    W_1 = manual_weight(A, 1, False)
+    W_2 = manual_weight(A, 1, True)
+    W_3 = de_minW(W_2)
+    print(W_1 == W_2)
+
+
     # 1. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
     A = torch.randn(32,1,1024,1024, requires_grad=True) # real 32x32 image input
     b,c,x,y = A.shape
