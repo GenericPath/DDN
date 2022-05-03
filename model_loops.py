@@ -27,7 +27,7 @@ def test(val_loader, model, criterion, args):
     with torch.no_grad():
         avg_acc, avg_loss = 0,0
         i = 0
-        for input_batch, target_batch in tqdm(val_loader, desc=test_accuracy):
+        for input_batch, target_batch in tqdm(val_loader, desc=avg_acc):
             i += 1
             input_batch, target_batch = input_batch, target_batch
 
