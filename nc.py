@@ -25,9 +25,9 @@ def manual_weight(name, r=1, min=False):
     
     if min:
         diags = r+2
-        out = np.zeros((N,diags))
+        out = np.zeros((diags,N))
         for index, i in enumerate(range(-(diags//2), (diags//2)+1)):
-            out[index] = np.diag(W, i)
+            out[index] = np.resize(np.diag(W, i), N)
         W = out
     return W
 
@@ -56,6 +56,12 @@ class NormalizedCuts(AbstractDeclarativeNode):
             objectives: (b, c, x) Torch tensor,
                 batch, channels of objective function evaluations
         """
+        # i,j,k,l = x.shape
+        # if k != l:
+        #     a = torch.zeros(l)
+        #     for index, i in enumerate(range(-(k//2), (k//2)+1)):
+
+
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
         b, c, N = y.shape
         y = y.reshape(b,c,1,N) # convert to a col vector
