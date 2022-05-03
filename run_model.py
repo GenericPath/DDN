@@ -15,7 +15,7 @@ momentums = [0.9]
 vals = [0.1]
 seeds = [0]
 total_imageses = [10]
-net_sizes = [[1,5,5,5,3]]
+net_sizes = [[1,128,256,512,1024]]
 
 # newer ones
 test = '' # Switch to --test when testing
