@@ -18,7 +18,7 @@ def save_images(in_batch, out_batch, name):
 
     plt.savefig(name+'.png')
 
-def test(val_loader, model, criterion, args):
+def test(val_loader, model, criterion, device, args):
     model.eval()
 
     dir = args.name + '/outputs'
@@ -29,7 +29,7 @@ def test(val_loader, model, criterion, args):
         i = 0
         for input_batch, target_batch in tqdm(val_loader, desc=avg_acc):
             i += 1
-            input_batch, target_batch = input_batch, target_batch
+            input_batch, target_batch = input_batch.to(device), target_batch.to(device)
 
             output = model(input_batch)
             val_loss = criterion(output, target_batch)
