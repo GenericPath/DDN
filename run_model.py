@@ -15,7 +15,12 @@ momentums = [0.9]
 vals = [0.1]
 seeds = [0]
 total_imageses = [10]
-net_sizes = [[1,128,32,32,1024]]
+net_sizes = [[1,5,5,5,3]]
+
+# newer ones
+test = '' # Switch to --test when testing
+network = 1
+dataset = 'weights1'
 
 script = 'main.py'
 folder = ""
@@ -56,7 +61,11 @@ for epoch in epochs:
                                 "-ti", str(total_images),
                                 "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
                                 "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
-                                "--production", str(args.production)] 
+                                "--production", str(args.production),
+                                "--network", network,
+                                "--dataset", dataset,
+                                test,
+                                ] 
                                 # "-m", momentum,
                                 # "-v", val,
                                 # "-s", seed,
