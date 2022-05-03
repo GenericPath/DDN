@@ -20,7 +20,7 @@ net_sizes = [[1,128,256,512,1024]]
 # newer ones
 test = '' # Switch to --test when testing
 network = 1
-dataset = 'weights1'
+datasets = ['weights1', 'weights5', 'weights7']
 
 script = 'main.py'
 folder = ""
@@ -52,31 +52,32 @@ for epoch in epochs:
                 if batch_size > total_images:
                     continue
                 for net_size in net_sizes:
-                    i += 1
+                    for dataset in datasets:
+                        i += 1
 
-                    run_name = 'weightsRuns' + str(i)
-                    command = ["python", script, 
-                                "-n", folder + str(run_name),
-                                "-e", str(epoch),
-                                "-b", str(batch_size),
-                                "-lr", str(lr),
-                                "-ti", str(total_images),
-                                "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
-                                "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
-                                "--production", str(args.production),
-                                "--network", str(network),
-                                "--dataset", dataset
-                                ] 
-                                # "-m", momentum,
-                                # "-v", val,
-                                # "-s", seed,
-                                # ""]
-                    print(command)
-                    f = open(out_file, "a")
-                    f.write(run_name + ' ' + str(command))
-                    f.close()
-                    p = Popen(command)
-                    (output, err) = p.communicate()
+                        run_name = 'weightsRuns' + str(i)
+                        command = ["python", script, 
+                                    "-n", folder + str(run_name),
+                                    "-e", str(epoch),
+                                    "-b", str(batch_size),
+                                    "-lr", str(lr),
+                                    "-ti", str(total_images),
+                                    "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
+                                    "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
+                                    "--production", str(args.production),
+                                    "--network", str(network),
+                                    "--dataset", dataset
+                                    ] 
+                                    # "-m", momentum,
+                                    # "-v", val,
+                                    # "-s", seed,
+                                    # ""]
+                        print(command)
+                        f = open(out_file, "a")
+                        f.write(run_name + ' ' + str(command))
+                        f.close()
+                        p = Popen(command)
+                        (output, err) = p.communicate()
 
 # Was also run on larger models, except they were all the 300 model.
 # also these may have been run on AbstractDeclarativeNode instead of EqConstrainedDeclarativeNode
