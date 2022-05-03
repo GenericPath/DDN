@@ -11,7 +11,7 @@ import torch.backends.cudnn as cudnn
 
 from data import get_dataset
 from model_loops import test, train, validate
-from model import Net
+from model import Net, WeightsNet
 
 # Maybe add this later
 # from torchsummary import summary
@@ -41,6 +41,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='man
 parser.add_argument('--test', action='store_true', help='Whether to test/evaluate or train')
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
 parser.add_argument('--production', default=False, type=bool, help='Production mode: If true run in a separate folder on a copy of the python scripts')
+parser.add_argument('--network', default=0, type=int, help='network to use: 0=Net, 1=WeightsNet')
 
 def main():
     # Parse commandline arguments
@@ -61,7 +62,11 @@ def main():
         args.writer = tb.SummaryWriter(results)
 
     # Create the model, loss, optimizer and scheduler
-    model = Net(args)
+    if args.network == 1:
+        model = WeightsNet(args)
+    else:
+        model = Net(args)
+        
     model = model.to(device=device)
     criterion = nn.BCEWithLogitsLoss()
     if args.optim == 'sgd':
