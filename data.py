@@ -91,7 +91,8 @@ class SimpleDatasets(Dataset):
         """
         file (string): Path to the pickle that contains [img paths, output arrays]
         """
-        append = '../../' if args.production else ''
+        # append = '../../' if args.production else ''
+        append = ''
         path = append + 'data/' + args.dataset + '/' + str(args.total_images) + '/' # location to store dataset
         data(path, args) # make the dataset
 
