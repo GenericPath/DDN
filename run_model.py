@@ -52,7 +52,7 @@ for epoch in epochs:
                 for net_size in net_sizes:
                     i += 1
 
-                    run_name = 'run' + str(i)
+                    run_name = 'weightsRuns' + str(i)
                     command = ["python", script, 
                                 "-n", folder + str(run_name),
                                 "-e", str(epoch),
