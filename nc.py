@@ -5,7 +5,7 @@ import matplotlib as plt
 # local imports
 from node import *
 
-def manual_weight(name, r=1):
+def manual_weight(name, r=1, min=False):
     """
     I = Image name
     r = radius for connections (defaults to 4-way connection with r=1)
@@ -22,6 +22,13 @@ def manual_weight(name, r=1):
             if np.linalg.norm(u-v) > r: # 4-way connection
                 continue
             W[u][v] = np.linalg.norm(I[u]-I[v])
+    
+    if min:
+        diags = r+2
+        out = np.zeros((N,diags))
+        for index, i in enumerate(range(-(diags//2), (diags//2)+1)):
+            out[index] = np.diag(W, i)
+        W = out
     return W
 
 class NormalizedCuts(AbstractDeclarativeNode):

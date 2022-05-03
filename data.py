@@ -56,18 +56,23 @@ def data(path, args, img_size=(32,32)):
             name = path+"img"+str(i)+".png"
             out.save(name, "PNG")
             images.append(name)
-                
-            if 'weights' in args.dataset:
-                # If weights, check if a r value is provided
-                if len(args.dataset) > len('weights'):
-                    diff = len('weights')-len(args.dataset)
-                    r = int(args.dataset[diff:])
-                    answers.append(manual_weight(name, r=r))
-                else:
-                    answers.append(manual_weight(name))
-                
-            else:
+            
+            if 'simple01' == args.dataset:
                 answers.append(answer)
+            else:
+                r=1
+                min=False   
+                if 'weights' in args.dataset:
+                    # If weights, check if a r value is provided
+                    if len(args.dataset) > len('weights'):
+                        diff = len('weights')-len(args.dataset)
+                        r = int(args.dataset[diff:])
+                elif 'minW' in args.dataset:    
+                    min = True
+                    if len(args.dataset) > len('minW'):
+                        diff = len('minW')-len(args.dataset)
+                        r = int(args.dataset[diff:])
+                answers.append(manual_weight(name, r=r, min=min))
             
         output = [images, answers]
         with open(path+'dataset', 'wb') as fp:

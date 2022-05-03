@@ -34,7 +34,7 @@ parser.add_argument('--gpu-id', '-gpu', type=str, default='1', dest='gpu', help=
 # currently no options to use
 parser.add_argument('--optim', '-o', metavar='OPT', type=str, default='sgd', dest='optim', help='optimiser to use')
 parser.add_argument('--shuffle', type=bool, default=True, help='shuffle batches')
-parser.add_argument('--dataset', type=str, default='simple01', help='dataset to use: weights(r_val), simple01')
+parser.add_argument('--dataset', type=str, default='simple01', help='dataset to use: weights(r_val), simple01, minW(r_val) e.g. minW3')
 
 # newer
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
