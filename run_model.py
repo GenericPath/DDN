@@ -62,7 +62,7 @@ for epoch in epochs:
                                 "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
                                 "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
                                 "--production", str(args.production),
-                                "--network", network,
+                                "--network", str(network),
                                 "--dataset", dataset,
                                 test,
                                 ] 
