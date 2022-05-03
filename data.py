@@ -57,8 +57,15 @@ def data(path, args, img_size=(32,32)):
             out.save(name, "PNG")
             images.append(name)
                 
-            if args.dataset == 'weights':
-                answers.append(manual_weight(name))
+            if 'weights' in args.dataset:
+                # If weights, check if a r value is provided
+                if len(args.dataset) > len('weights'):
+                    diff = len('weights')-len(args.dataset)
+                    r = int(args.dataset[diff:])
+                    answers.append(manual_weight(name, r=r))
+                else:
+                    answers.append(manual_weight(name))
+                
             else:
                 answers.append(answer)
             
