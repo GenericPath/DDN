@@ -10,6 +10,8 @@ from torch.utils.data import random_split
 
 from nc import manual_weight
 
+import argparse
+
 def get_dataset(args):
     train_dataset = SimpleDatasets(args, transform=transforms.ToTensor()) #path/dataset is a pickle containing (image paths, targets)
 
@@ -112,3 +114,16 @@ class SimpleDatasets(Dataset):
             y_label = self.transform(y_label)
             
         return (img, y_label)
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='debugging arguments')
+    parser.add_argument('--dataset', type=str, default='minW1', help='dataset to use: weights(r_val), simple01, minW(r_val) e.g. minW3')
+    parser.add_argument('--total-images', '-ti', metavar='N', type=int, default=10, dest='total_images', help='total number of images in dataset')
+    parser.add_argument('--production', action='store_true', help='Production mode: If true run in a separate folder on a copy of the python scripts')
+
+    args = parser.parse_args()
+    args.production = False
+    path = 'data/' + args.dataset + '/' + str(args.total_images) + '/'
+
+    data(path, args)
