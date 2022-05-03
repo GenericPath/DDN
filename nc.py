@@ -21,7 +21,7 @@ def manual_weight(name, r=1, min=False):
         for v in range(N):
             if np.linalg.norm(u-v) > r: # 4-way connection
                 continue
-            W[u][v] = np.linalg.norm(I[u]-I[v])
+            W[u][v] = 1 if I[u] == I[v] else 0 # np.linalg.norm(I[u]-I[v])
     
     if min:
         diags = r+2
