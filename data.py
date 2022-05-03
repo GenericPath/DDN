@@ -26,6 +26,20 @@ def get_dataset(args):
 
     return train_loader, val_loader
 
+def get_weights_vars(args):
+    r=1
+    min=False   
+    if 'weights' in args.dataset:
+        # If weights, check if a r value is provided
+        if len(args.dataset) > len('weights'):
+            diff = len('weights')-len(args.dataset)
+            r = int(args.dataset[diff:])
+    elif 'minW' in args.dataset:    
+        min = True
+        if len(args.dataset) > len('minW'):
+            diff = len('minW')-len(args.dataset)
+            r = int(args.dataset[diff:])
+    return r, min
 
 def data(path, args, img_size=(32,32)):
     """ Generate a simple dataset (if it doesn't already exist) 
@@ -60,18 +74,7 @@ def data(path, args, img_size=(32,32)):
             if 'simple01' == args.dataset:
                 answers.append(answer)
             else:
-                r=1
-                min=False   
-                if 'weights' in args.dataset:
-                    # If weights, check if a r value is provided
-                    if len(args.dataset) > len('weights'):
-                        diff = len('weights')-len(args.dataset)
-                        r = int(args.dataset[diff:])
-                elif 'minW' in args.dataset:    
-                    min = True
-                    if len(args.dataset) > len('minW'):
-                        diff = len('minW')-len(args.dataset)
-                        r = int(args.dataset[diff:])
+                r, min = get_weights_vars(args)
                 answers.append(manual_weight(name, r=r, min=min))
             
         output = [images, answers]
