@@ -1,26 +1,32 @@
 # Deep Declarative Node for Normalised Cuts
 # Garth Wales - 2022
-import torch
+import torch, os
 from tqdm import tqdm
 
-def test(val_loader, model, criterion):
+def test(val_loader, model, criterion, args):
     model.eval()
     with torch.no_grad():
         avg_acc, avg_loss = 0,0
-        for input_batch, target_batch in tqdm(val_loader, desc=val_accuracy):
+        for input_batch, target_batch in tqdm(val_loader, desc=test_accuracy):
             input_batch, target_batch = input_batch, target_batch
 
             output = model(input_batch)
             val_loss = criterion(output, target_batch)
 
             output = (output > 0.5).float()
-            val_accuracy = output.eq(target_batch).float().mean()
+            test_accuracy = output.eq(target_batch).float().mean()
             
-            avg_acc += val_accuracy
+            avg_acc += test_accuracy
             avg_loss += val_loss.item()
 
         avg_acc /= len(val_loader)
         avg_loss /= len(val_loader)
+
+    # TODO: save the outputs with this code
+    # dir = 'results/'+args.name
+    # os.makedirs(dir)
+    # with open(dir+'output.txt', 'w') as file:
+    #     file.write()
     return avg_acc, avg_loss
 
 def validate(val_loader, model, device, criterion, scheduler):
@@ -59,5 +65,5 @@ def train(train_loader, model, device, criterion, optimizer):
         train_loss += loss.item()
 
     train_accuracy /= len(train_loader)
-    train_loss/= len(train_loader)
+    train_loss/= len(train_loader) # Loss is averaged for batch size, to avoid having to tune for scaling size of learning rates etc
     return train_accuracy, train_loss

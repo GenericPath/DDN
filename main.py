@@ -89,7 +89,7 @@ def main():
 
     # Evaluate the network (and don't train)
     if args.test:
-        avg_acc, avg_loss = test(val_loader, model, criterion)
+        avg_acc, avg_loss = test(val_loader, model, criterion, args)
         print(f'Evaluation: avg acc - {avg_acc}, avg_loss - {avg_loss}')
         return
 
