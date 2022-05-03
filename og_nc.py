@@ -7,7 +7,7 @@ import scipy
 import scipy.spatial
 
 # To compare against the acual NC answers
-from nc import NormalizedCuts
+from nc import NormalizedCuts, manual_weight
 
 def main():
     # A = ["a","b","c","d","e","f"]
@@ -35,7 +35,7 @@ def main():
     V = np.array([mesh[0].ravel(), mesh[1].ravel()]).T
 
     W = create_weights(I)
-    W_2 = manual_create_weights(I)
+    W_2 = manual_weight(I)
     (A, B) = ncut(V, W)
 
 
@@ -73,22 +73,6 @@ def create_weights(I):
     W_cond = scipy.spatial.distance.pdist(I.ravel().reshape(-1, 1))
     W = scipy.spatial.distance.squareform(W_cond)
     return W
-
-# Personal code..
-def manual_create_weights(I):
-    x,y = I.shape
-    N = x*y
-    W = np.zeros((N,N))
-
-    I = I.flatten()
-
-    for u in range(N):
-        for v in range(N):
-            if np.linalg.norm(u-v) > 1: # 4-way connection
-                continue
-            W[u][v] = np.linalg.norm(I[u]-I[v])
-    return W
-
 
 if __name__ == '__main__':
     main()

@@ -5,7 +5,11 @@ import matplotlib as plt
 # local imports
 from node import *
 
-def manual_weight(name):
+def manual_weight(name, r=1):
+    """
+    I = Image name
+    r = radius for connections (defaults to 4-way connection with r=1)
+    """
     I = plt.imread(name)
     x,y = I.shape
     N = x*y
@@ -15,7 +19,7 @@ def manual_weight(name):
 
     for u in range(N):
         for v in range(N):
-            if np.linalg.norm(u-v) > 1: # 4-way connection
+            if np.linalg.norm(u-v) > r: # 4-way connection
                 continue
             W[u][v] = np.linalg.norm(I[u]-I[v])
     return W
