@@ -12,9 +12,9 @@ def save_images(in_batch, out_batch, name):
     for i in range(0, n, 2):
         # Debug, plot figure
         f.add_subplot(1, n, i + 1)
-        plt.imshow(in_batch[i].cpu())
+        plt.imshow(in_batch[i].view(32,32).cpu())
         f.add_subplot(1, n, i + 2)
-        plt.imshow(out_batch[i].cpu())
+        plt.imshow(out_batch[i].view(32,32).cpu())
 
     plt.savefig(name+'.png')
 
