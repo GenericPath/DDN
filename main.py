@@ -123,7 +123,7 @@ def main():
             'best_error': best_error,
             'best_acc': best_acc,
             'optimizer' : optimizer.state_dict(),
-        }, is_best, dir=results, filename='checkpoint_epoch_' + str(epoch + 1))
+        }, is_best, dir=results, filename='latest_epoch')
 
     if args.writer:
         args.writer.close()
