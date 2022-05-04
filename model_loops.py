@@ -7,16 +7,13 @@ import matplotlib.pyplot as plt
 def save_images(in_batch, out_batch, name):
     in_batch, out_batch = in_batch.squeeze(), out_batch.squeeze()
 
-    n = len(in_batch) * 2
-    f = plt.figure()
-    for i in range(0, n, 2):
-        # Debug, plot figure
-        f.add_subplot(1, n, i + 1)
+    n = len(in_batch)
+    for i in range(0, n):
+        f,axx = plt.subplots(1,2)
         plt.imshow(in_batch[i].view(32,32).cpu())
-        f.add_subplot(1, n, i + 2)
         plt.imshow(out_batch[i].view(32,32).cpu())
-
-    plt.savefig(name+'.png')
+        plt.savefig(name+str(i)+'.png')
+        plt.close()
 
 def test(val_loader, model, criterion, device, args):
     model.eval()
