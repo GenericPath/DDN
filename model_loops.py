@@ -56,7 +56,7 @@ def test(val_loader, model, criterion, device, args):
             val_loss = criterion(output, target_batch)
 
             output = (output > 0.5).float()
-            batch_accuracy = output.eq(target_batch)
+            batch_accuracy = output.eq(target_batch) # TODO: finish this.. so we can plot the accuracy on each image
             test_accuracy = output.eq(target_batch).float().mean()
             
             avg_acc += test_accuracy
