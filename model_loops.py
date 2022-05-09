@@ -4,8 +4,30 @@ import torch, os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+def plot_multiple_images(batch_no, images, labels=None, figsize=[32,32]):
+    """
+    Images [input_batch, output_batch, ...]
+    """
+    # settings
+    N = min(map(len, images)) # length of the shortest array
+    nrows, ncols = N, len(images)  # array of sub-plots
+
+    # create figure (fig), and array of axes (ax)
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
+    # can access individual plot with ax[row][col]
+
+    # plot image on each sub-plot
+    for i, row_ax in enumerate(ax): # could flatten if not explicitly doing in pairs (ax.flat)
+        for j in range(ncols):
+            row_ax[j].imshow(images[j][i])
+            if labels is not None:
+                row_ax[j].set_title(str(labels[i]))
+
+    plt.tight_layout(True)
+    plt.savefig('batch-'+str(batch_no)+'.png')
+    plt.close()
+
 def save_images(in_batch, out_batch, name):
-    in_batch, out_batch = in_batch.squeeze(), out_batch.squeeze()
 
     n = len(in_batch)
     for i in range(0, n):
@@ -18,6 +40,8 @@ def save_images(in_batch, out_batch, name):
 def test(val_loader, model, criterion, device, args):
     model.eval()
 
+    if not args.name:
+        args.name = '.'
     dir = args.name + '/outputs'
     if not os.path.exists(dir):
             os.makedirs(dir)
@@ -32,11 +56,13 @@ def test(val_loader, model, criterion, device, args):
             val_loss = criterion(output, target_batch)
 
             output = (output > 0.5).float()
+            batch_accuracy = output.eq(target_batch)
             test_accuracy = output.eq(target_batch).float().mean()
             
             avg_acc += test_accuracy
             avg_loss += val_loss.item()
 
+            # labels = accuracy per image in batch?
             save_images(target_batch, output, 'batch'+str(i))
 
         avg_acc /= len(val_loader)
