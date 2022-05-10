@@ -77,7 +77,7 @@ def data(path, args, img_size=(32,32)):
                 answers.append(answer)
             else:
                 r, min = get_weights_vars(args)
-                answers.append(manual_weight(name, r=r, min=min))
+                answers.append(manual_weight(name, r=r, minVer=min))
             
         output = [images, answers]
         with open(path+'dataset', 'wb') as fp:
