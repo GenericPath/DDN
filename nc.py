@@ -5,33 +5,44 @@ import matplotlib.pyplot as plt
 # local imports
 from node import *
 
-def manual_weight(name, r=1, min=False):
+def manual_weight(name, r=1, minVer=False):
     """
     I = Image name
     r = radius for connections (defaults to 4-way connection with r=1)
     """
     if type(name) == str: I = plt.imread(name)
     else: I = name
-    x,y = I.shape
+    B,C,x,y = I.shape
     
     N = x*y
-    W = torch.zeros((N,N))
+    diags = r+1 if minVer else N
+    W = torch.zeros((B,C,N,N))
 
+    r = min(N//2, r) # ensure the r value doesn't exceed the axes of the outputs
+
+    # TODO : the minVer and non-minver versions could be combined... diags placed into W's size tuple etc and math
+    # e.g. something like https://stackoverflow.com/a/43311126 or similar utilised
     I = I.flatten()
-
-    for u in range(N):
-        for v in range(N):
-            if np.linalg.norm(u-v) > r: # 4-way connection
-                continue
-            W[u][v] = 1 if I[u] == I[v] else 0 # np.linalg.norm(I[u]-I[v])
+    for b in range(0, B):
+        for c in range(0, C):
+            for u in range(N):
+                for v in range(N):
+                    if np.linalg.norm(u-v) > r: # 4-way connection
+                        continue
+                    # Symmetric, TODO : make this more efficient (skip unneccessary loops)
+                    W[b][c][u][v] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0 # np.linalg.norm(I[u]-I[v])
+                    W[b][c][v][u] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0
     
-    if min:
-        diags = r+2
-        out = torch.zeros((diags,N))
-        for index, i in enumerate(range(-(diags//2), (diags//2)+1)):
-            temp_diag = torch.diag(W,i)
-            pad = torch.zeros(N-len(temp_diag))
-            out[index] = torch.cat([temp_diag, pad])
+    if minVer:
+        # This will create an output which is just the important non-zero diagonals
+        # should make learning much easier (3x1024 vs 1024x1024)
+        out = torch.zeros((B,C,diags,N))
+        for b in range(B):
+            for c in range(C):
+                for index, i in enumerate(range(0, diags)): # symmetric, so grabbing only upper tri diagonals
+                    temp_diag = torch.diag(W[b][c],i)
+                    pad = torch.zeros(N-len(temp_diag)) # pad with 0's to make it so it will fit
+                    out[b][c][index] = torch.cat([temp_diag, pad])
         W = out
     return W
 
@@ -39,13 +50,19 @@ def de_minW(out):
     """
     Returns the reconstructed weight matrix from a smaller version.
     """
-    #b,c,
-    diags, N = out.shape
-    reconst = torch.zeros((N,N))
-    for index, i in enumerate(range(-(diags//2), (diags//2)+1)):            
-        temp = torch.diag(out[b][c][index][:N-abs(i)], i)
-        reconst = torch.add(reconst, temp)
-    return reconst.reshape(b,c,N,N)
+    B,C,diags,N = out.shape
+    if diags == N: # if already square, then don't bother
+        return out
+    reconst = torch.zeros((B,C,N,N))
+    for b in range(B):
+        for c in range(C):
+            for i, diags in enumerate(out[b][c]):
+                temp = torch.diag(diags[:N-i], i) # [:N-i] trims to fit the index'th diag size, places into index'th place
+                reconst[b][c] = torch.add(reconst[b][c], temp) # add the upper diagonal (or middle if 0)
+                if i != 0:
+                    temp = torch.diag(diags[:N-i], -i)
+                    reconst[b][c] = torch.add(reconst[b][c], temp) # add the lower diagonal (symmetric)
+    return reconst
 
 class NormalizedCuts(AbstractDeclarativeNode):
     """
@@ -72,10 +89,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
             objectives: (b, c, x) Torch tensor,
                 batch, channels of objective function evaluations
         """
-        i,j,k,l = x.shape
-        if k != l:
-            # then it is a minW style weight matrix
-            x = de_minW(x)
+        x = de_minW(x) # check if needs to be converted from minVer style
 
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
         b, c, N = y.shape
@@ -107,10 +121,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
             equalities: (b, c, x) Torch tensor,
                 batch, channel of constraint calculation scalars
         """
-        i,j,k,l = x.shape
-        if k != l:
-            # then it is a minW style weight matrix
-            x = de_minW(x)
+        x = de_minW(x) # check if needs to be converted from minVer style
 
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
         b, c, N = y.shape
@@ -146,6 +157,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
         # - D_inv_sqrt calculates the inv sqrt of diagonal only to avoid division by zero
 
         # obtain the batch and image size (sqrt of x/y to get out_size?)
+        A = de_minW(A) # check if needs to be converted from minVer style
         b,c,x,y = A.shape
 
         # can also replace bc with ...
@@ -176,16 +188,15 @@ class NormalizedCuts(AbstractDeclarativeNode):
         return fY
 
 if __name__ == "__main__":
-    A = torch.randn(32,32)
+    A = torch.randn(2,2,3,3)
     W_1 = manual_weight(A, 1, False)
     W_2 = manual_weight(A, 1, True)
     W_3 = de_minW(W_2)
-    print(W_1 == W_2)
+    print(W_1 == W_3)
 
 
     # 1. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
     A = torch.randn(32,1,1024,1024, requires_grad=True) # real 32x32 image input
-    b,c,x,y = A.shape
 
     A = torch.nn.functional.relu(A) # enforce positive constraint
     A_t = torch.einsum('bcij->bcji', A) # transpose of batched matrix
@@ -203,3 +214,25 @@ if __name__ == "__main__":
         # TODO: verify why this is not correct?
         fConsts = node.equality_constraints(A, y)
         print(f'Max: {torch.max(fConsts)}, Min: {torch.min(fConsts)}, Mean: {torch.mean(fConsts)}, std var: {torch.std(fConsts)}')
+
+    print('minVer tests')
+    print('='*15)
+    # 3. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
+    #    for the minVer style
+    A = torch.randn(32,1,3,1024, requires_grad=True) # real 32x32 image input
+    A = torch.nn.functional.relu(A) # enforce positive constraint
+
+    node = NormalizedCuts()
+    y,misc = node.solve(A)
+    node.test(de_minW(A),y=y)
+
+    # 4. Confirm the node solves the correct problems
+    eqconstBool = issubclass(NormalizedCuts, EqConstDeclarativeNode) # If AbstractDeclarativeNode then false, remove this later?...
+    fSolved = node.objective(A, y)
+    print(f'Max: {torch.max(fSolved)}, Min: {torch.min(fSolved)}, Mean: {torch.mean(fSolved)}, std var: {torch.std(fSolved)}')
+    if eqconstBool:
+        # TODO: verify why this is not correct?
+        fConsts = node.equality_constraints(A, y)
+        print(f'Max: {torch.max(fConsts)}, Min: {torch.min(fConsts)}, Mean: {torch.mean(fConsts)}, std var: {torch.std(fConsts)}')
+
+    
