@@ -68,7 +68,7 @@ def main():
         model = Net(args)
         
     model = model.to(device=device)
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.CrossEntropyLoss()
     if args.optim == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
     else:
