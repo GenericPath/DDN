@@ -91,6 +91,7 @@ class SimpleDatasets(Dataset):
         """
         file (string): Path to the pickle that contains [img paths, output arrays]
         """
+        self.args = args
         # append = '../../' if args.production else ''
         append = ''
         path = append + 'data/' + args.dataset + '/' + str(args.total_images) + '/' # location to store dataset
@@ -112,7 +113,8 @@ class SimpleDatasets(Dataset):
         
         if self.transform is not None:
             img = self.transform(img)
-            y_label = self.transform(y_label)
+            if 'minW' not in self.args.dataset:
+                y_label = self.transform(y_label)
             
         return (img, y_label)
 
