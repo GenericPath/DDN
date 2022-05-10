@@ -15,12 +15,12 @@ momentums = [0.9]
 vals = [0.1]
 seeds = [0]
 total_imageses = [10, 100]
-net_sizes = [[1,128,256,512,1024]]
+net_sizes = [[1,32,64,32,5]]
 
 # newer ones
 test = '' # Switch to --test when testing
 network = 1
-datasets = ['minW1', 'minW5']
+datasets = ['minW5']
 
 script = 'main.py'
 folder = ""
