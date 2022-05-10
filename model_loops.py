@@ -19,23 +19,13 @@ def plot_multiple_images(batch_no, images, labels=None, figsize=[32,32]):
     # plot image on each sub-plot
     for i, row_ax in enumerate(ax): # could flatten if not explicitly doing in pairs (ax.flat)
         for j in range(ncols):
-            row_ax[j].imshow(images[j][i])
+            row_ax[j].imshow(images[j][i].cpu())
             if labels is not None:
                 row_ax[j].set_title(str(labels[i]))
 
     plt.tight_layout(True)
     plt.savefig('batch-'+str(batch_no)+'.png')
     plt.close()
-
-def save_images(in_batch, out_batch, name):
-
-    n = len(in_batch)
-    for i in range(0, n):
-        f,axx = plt.subplots(1,2)
-        axx[0].imshow(in_batch[i].view(32,32).cpu())
-        axx[1].imshow(out_batch[i].view(32,32).cpu())
-        plt.savefig(name+str(i)+'.png')
-        plt.close()
 
 def test(val_loader, model, criterion, device, args):
     model.eval()
@@ -56,14 +46,15 @@ def test(val_loader, model, criterion, device, args):
             val_loss = criterion(output, target_batch)
 
             output = (output > 0.5).float()
-            batch_accuracy = output.eq(target_batch) # TODO: finish this.. so we can plot the accuracy on each image
+            b,c,x,y = target_batch.shape
+            batch_accuracy = (output.eq(target_batch).float().sum(dim=(-2,-1)) / (x*y)) * 100 # outputs: [b * 1] where 1 is the percentage accuracy
             test_accuracy = output.eq(target_batch).float().mean()
             
             avg_acc += test_accuracy
             avg_loss += val_loss.item()
 
             # labels = accuracy per image in batch?
-            save_images(target_batch, output, 'batch'+str(i))
+            plot_multiple_images(i, [input_batch, output], labels=batch_accuracy, figsize=[x,y])
 
         avg_acc /= len(val_loader)
         avg_loss /= len(val_loader)
