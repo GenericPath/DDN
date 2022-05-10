@@ -10,13 +10,18 @@ def manual_weight(name, r=1, minVer=False):
     I = Image name
     r = radius for connections (defaults to 4-way connection with r=1)
     """
-    if type(name) == str: I = plt.imread(name)
-    else: I = name
-    B,C,x,y = I.shape
+    if type(name) == str: 
+        I = plt.imread(name)
+        B,C = 0,0
+        x,y = I.shape
+    else: 
+        I = name
+        B,C,x,y = I.shape
     
     N = x*y
     diags = r+1 if minVer else N
-    W = torch.zeros((B,C,N,N))
+    if B == 0:  W = torch.zeros((N,N))
+    else:       W = torch.zeros((B,C,N,N))
 
     r = min(N//2, r) # ensure the r value doesn't exceed the axes of the outputs
 
