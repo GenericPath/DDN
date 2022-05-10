@@ -53,7 +53,6 @@ def test(val_loader, model, criterion, device, args):
             avg_acc += test_accuracy
             avg_loss += val_loss.item()
 
-            # labels = accuracy per image in batch?
             plot_multiple_images(i, [input_batch, output], labels=batch_accuracy, figsize=[x,y])
 
         avg_acc /= len(val_loader)
