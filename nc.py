@@ -224,7 +224,7 @@ if __name__ == "__main__":
     print('='*15)
     # 3. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
     #    for the minVer style
-    A = torch.randn(32,1,3,1024, requires_grad=True) # real 32x32 image input
+    A = torch.randn(32,1,2,1024, requires_grad=True)
     A = torch.nn.functional.relu(A) # enforce positive constraint
 
     node = NormalizedCuts()
