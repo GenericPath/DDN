@@ -80,6 +80,8 @@ def data(path, args, img_size=(32,32)):
                 answers.append(manual_weight(name, r=r, minVer=min))
             
         output = [images, answers]
+       
+        ans_out = open(path+'answers'+'.txt', 'w'); ans_out.write(str(answers)); ans_out.close()
         with open(path+'dataset', 'wb') as fp:
             pickle.dump(output, fp)
         print("made the dataset file")
