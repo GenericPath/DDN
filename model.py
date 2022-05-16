@@ -24,6 +24,7 @@ class WeightsNet(nn.Module):
     def __init__(self, args):
         super(WeightsNet, self).__init__()
         self.r, self.min = get_weights_vars(args)
+        self.min = True # TODO : not hardcode this... (datasets simple/weights with a min option for either)
         self.block1 = self.conv_block(c_in=args.net_size[0], c_out=args.net_size[1], kernel_size=3, stride=1, padding=1)
         self.block2 = self.conv_block(c_in=args.net_size[1], c_out=args.net_size[2], kernel_size=3, stride=1, padding=1)
         self.block3 = self.conv_block(c_in=args.net_size[2], c_out=args.net_size[3], kernel_size=3, stride=1, padding=1)
