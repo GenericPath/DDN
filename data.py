@@ -77,11 +77,20 @@ def data(path, args, img_size=(32,32)):
                 answers.append(answer)
             else:
                 r, min = get_weights_vars(args)
-                answers.append(manual_weight(name, r=r, minVer=min))
-            
+                answers.append(manual_weight(name, r=r, minVer=min).squeeze())
+
+        # write the answers to a txt file to visually inspect (while initially setting everything up)
+        ans_out = open(path+'answers'+'.txt', 'w')
+        for answer in answers: # [[b,c,row,item],...]
+            for rows in answer:
+                for item in rows:
+                    ans_out.write(str(item.item()))
+                ans_out.write('\n')
+            ans_out.write('\n---\n')
+        ans_out.close()
+
+        # save the input, output pairs to a file
         output = [images, answers]
-       
-        ans_out = open(path+'answers'+'.txt', 'w'); ans_out.write(str(answers)); ans_out.close()
         with open(path+'dataset', 'wb') as fp:
             pickle.dump(output, fp)
         print("made the dataset file")
@@ -115,7 +124,7 @@ class SimpleDatasets(Dataset):
         
         if self.transform is not None:
             img = self.transform(img)
-            if 'minW' not in self.args.dataset:
+            if 'simple01' in self.args.dataset:
                 y_label = self.transform(y_label)
             
         return (img, y_label)

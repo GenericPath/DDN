@@ -12,7 +12,7 @@ def manual_weight(name, r=1, minVer=False):
     """
     if type(name) == str: 
         I = plt.imread(name)
-        B,C = 0,0
+        B,C = 1,1
         x,y = I.shape
     else: 
         I = name
@@ -20,8 +20,7 @@ def manual_weight(name, r=1, minVer=False):
     
     N = x*y
     diags = r+1 if minVer else N
-    if B == 0:  W = torch.zeros((N,N))
-    else:       W = torch.zeros((B,C,N,N))
+    W = torch.zeros((B,C,N,N))
 
     r = min(N//2, r) # ensure the r value doesn't exceed the axes of the outputs
 
