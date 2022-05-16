@@ -84,7 +84,7 @@ class PostNC(nn.Module):
         x = self.block1(x)
         x = self.block2(x)
         x = self.lastcnn(x)
-        x = torch.sigmoid(x)
+        # x = torch.sigmoid(x) # this is replaced with using the correct loss function (BCEWithLogitsLoss as it is more stable!)
         return x
     def conv_block(self, c_in, c_out, **kwargs):
         seq_block = nn.Sequential(
