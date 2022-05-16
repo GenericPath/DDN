@@ -96,8 +96,8 @@ def train(train_loader, model, device, criterion, optimizer):
             loss.backward()
         optimizer.step()
 
-        output = (output > 0.5).float()
-        train_accuracy += output.eq(target_batch).float().mean()
+        test_output = (output > 0.5).float()
+        train_accuracy += output.eq(test_output).float().mean()
         train_loss += loss.item()
 
     train_accuracy /= len(train_loader)
