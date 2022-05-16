@@ -84,7 +84,7 @@ def data(path, args, img_size=(32,32)):
         for answer in answers: # [[b,c,row,item],...]
             for rows in answer:
                 for item in rows:
-                    ans_out.write(str(item.item()))
+                    ans_out.write(str(item.item()) + ' ')
                 ans_out.write('\n')
             ans_out.write('\n---\n')
         ans_out.close()
