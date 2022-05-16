@@ -27,7 +27,7 @@ class WeightsNet(nn.Module):
         self.block1 = self.conv_block(c_in=args.net_size[0], c_out=args.net_size[1], kernel_size=3, stride=1, padding=1)
         self.block2 = self.conv_block(c_in=args.net_size[1], c_out=args.net_size[2], kernel_size=3, stride=1, padding=1)
         self.block3 = self.conv_block(c_in=args.net_size[2], c_out=args.net_size[3], kernel_size=3, stride=1, padding=1)
-        if self.min: self.lastcnn = nn.Conv2d(in_channels=args.net_size[3], out_channels=self.r, kernel_size=3, stride=1, padding=1)
+        if self.min: self.lastcnn = nn.Conv2d(in_channels=args.net_size[3], out_channels=self.r+1, kernel_size=3, stride=1, padding=1)
         else: self.lastcnn = nn.Conv2d(in_channels=args.net_size[3], out_channels=args.net_size[4], kernel_size=3, stride=1, padding=1)
         self.relu = nn.ReLU()
     def forward(self, x):
