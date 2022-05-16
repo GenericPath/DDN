@@ -20,7 +20,7 @@ net_sizes = [[1,32,64,32,6]]
 # newer ones
 test = '' # Switch to --test when testing
 network = 0
-datasets = ['minW5']
+datasets = ['simple01']
 
 script = 'main.py'
 folder = ""
