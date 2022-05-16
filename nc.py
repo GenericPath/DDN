@@ -57,11 +57,11 @@ def de_minW(out):
     B,C,diags,N = out.shape
     if diags == N: # if already square, then don't bother
         return out
-    reconst = torch.zeros((B,C,N,N))
+    reconst = torch.zeros((B,C,N,N)).to(out.device)
     for b in range(B):
         for c in range(C):
             for i, diags in enumerate(out[b][c]):
-                temp = torch.diag(diags[:N-i], i) # [:N-i] trims to fit the index'th diag size, places into index'th place
+                temp = torch.diag(diags[:N-i], i).to(out.device) # [:N-i] trims to fit the index'th diag size, places into index'th place
                 reconst[b][c] = torch.add(reconst[b][c], temp) # add the upper diagonal (or middle if 0)
                 if i != 0:
                     temp = torch.diag(diags[:N-i], -i)
