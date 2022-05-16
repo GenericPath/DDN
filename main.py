@@ -68,7 +68,7 @@ def main():
         model = Net(args)
         
     model = model.to(device=device)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCEWithLogitsLoss() # BCEWithLogitsLoss to replace BCE with Sigmoid
     if args.optim == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
     else:
