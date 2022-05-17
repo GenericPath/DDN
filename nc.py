@@ -57,7 +57,7 @@ def de_minW(out):
     B,C,diags,N = out.shape
     if diags == N: # if already square, then don't bother
         return out
-    reconst = torch.zeros((B,C,N,N)).to(out.device)
+    reconst = torch.zeros((B,C,N,N), device=out.device)
     for b in range(B):
         for c in range(C):
             for i, diags in enumerate(out[b][c]):
