@@ -172,6 +172,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
         L = (D-A) # Laplacian matrix
         # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
         L_norm = torch.einsum('bcij,bcjk->bcik', torch.einsum('bcij,bcjk->bcik', D_inv_sqrt , L) , D_inv_sqrt)
+        L_norm = L_norm.to(A.device) # TODO : more elegant fix?
 
         # Solve eigenvectors and eigenvalues
         (w, v) = torch.linalg.eigh(L_norm)
