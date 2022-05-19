@@ -40,10 +40,10 @@ def manual_weight(name, r=1, minVer=False):
     if minVer:
         # This will create an output which is just the important non-zero diagonals
         # should make learning much easier (3x1024 vs 1024x1024)
-        out = torch.zeros((B,C,diags,N))
+        out = torch.zeros((B,C,r,N)) # r, not r+1 as the diagonal is always 1 in current scheme. same reason for range(1,...)
         for b in range(B):
             for c in range(C):
-                for index, i in enumerate(range(0, diags)): # symmetric, so grabbing only upper tri diagonals
+                for index, i in enumerate(range(1, diags)): # symmetric, so grabbing only upper tri diagonals
                     temp_diag = torch.diag(W[b][c],i)
                     pad = torch.zeros(N-len(temp_diag)) # pad with 0's to make it so it will fit
                     out[b][c][index] = torch.cat([temp_diag, pad])
@@ -61,9 +61,11 @@ def de_minW(out):
     for b in range(B):
         for c in range(C):
             for i, diags in enumerate(out[b][c]):
-                temp = torch.diag(diags[:N-i], i).to(out.device) # [:N-i] trims to fit the index'th diag size, places into index'th place
-                reconst[b][c] = torch.add(reconst[b][c], temp) # add the upper diagonal (or middle if 0)
-                if i != 0:
+                if i == 0: # add the main diagonal (of all ones)
+                    reconst[b][c] = torch.add(reconst[b][c], torch.ones(N))
+                else: # add the symmetric non-main diagonals
+                    temp = torch.diag(diags[:N-i], i).to(out.device) # [:N-i] trims to fit the index'th diag size, places into index'th place
+                    reconst[b][c] = torch.add(reconst[b][c], temp) # add the upper diagonal (or middle if 0)
                     temp = torch.diag(diags[:N-i], -i)
                     reconst[b][c] = torch.add(reconst[b][c], temp) # add the lower diagonal (symmetric)
     return reconst
@@ -193,6 +195,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
         return fY
 
 if __name__ == "__main__":
+    print("\nCheck manual_weight and deMinW provide consistent output")
     A = torch.randn(2,2,3,3)
     W_1 = manual_weight(A, 1, False)
     W_2 = manual_weight(A, 1, True)
@@ -201,6 +204,7 @@ if __name__ == "__main__":
 
 
     # 1. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
+    print("\nstandard tests")
     A = torch.randn(32,1,1024,1024, requires_grad=True) # real 32x32 image input
 
     A = torch.nn.functional.relu(A) # enforce positive constraint
@@ -220,8 +224,7 @@ if __name__ == "__main__":
         fConsts = node.equality_constraints(A, y)
         print(f'Max: {torch.max(fConsts)}, Min: {torch.min(fConsts)}, Mean: {torch.mean(fConsts)}, std var: {torch.std(fConsts)}')
 
-    print('minVer tests')
-    print('='*15)
+    print('\nminVer tests')
     # 3. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
     #    for the minVer style
     A = torch.randn(32,1,2,1024, requires_grad=True)
