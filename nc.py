@@ -54,19 +54,21 @@ def de_minW(out):
     """
     Returns the reconstructed weight matrix from a smaller version.
     """
-    B,C,diags,N = out.shape
+    B,C,r,N = out.shape
+    diags = r + 1 # include the main diagonal of ones
     if diags == N: # if already square, then don't bother
         return out
     reconst = torch.zeros((B,C,N,N), device=out.device)
     for b in range(B):
         for c in range(C):
-            for i, diags in enumerate(out[b][c]):
+            for i  in range(0, diags):
                 if i == 0: # add the main diagonal (of all ones)
-                    reconst[b][c] = torch.add(reconst[b][c], torch.ones(N))
+                    reconst[b][c] = torch.add(reconst[b][c], torch.eye(N, device=out.device))
                 else: # add the symmetric non-main diagonals
-                    temp = torch.diag(diags[:N-i], i).to(out.device) # [:N-i] trims to fit the index'th diag size, places into index'th place
+                    diagonal = out[b][c][i-1]
+                    temp = torch.diag(diagonal[:N-i], i).to(out.device) # [:N-i] trims to fit the index'th diag size, places into index'th place
                     reconst[b][c] = torch.add(reconst[b][c], temp) # add the upper diagonal (or middle if 0)
-                    temp = torch.diag(diags[:N-i], -i)
+                    temp = torch.diag(diagonal[:N-i], -i).to(out.device)
                     reconst[b][c] = torch.add(reconst[b][c], temp) # add the lower diagonal (symmetric)
     return reconst
 
@@ -195,6 +197,14 @@ class NormalizedCuts(AbstractDeclarativeNode):
         return fY
 
 if __name__ == "__main__":
+
+    print("\nCheck minified converts to correct full form")
+    A = torch.randn(3,1,1,5)
+    print(A[0][0])
+    full_A = de_minW(A)
+    print(full_A[0][0])
+
+    exit()
     print("\nCheck manual_weight and deMinW provide consistent output")
     A = torch.randn(2,2,3,3)
     W_1 = manual_weight(A, 1, False)
