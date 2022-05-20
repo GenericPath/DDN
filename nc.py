@@ -54,6 +54,12 @@ def de_minW(out):
     """
     Returns the reconstructed weight matrix from a smaller version.
     """
+
+    # Currently this works on a [r, N] matrix
+    # could use https://stackoverflow.com/a/68029042 to
+    # work on an [N*N] 1d matrix... and would require less actual code?
+    # would be much more computationally friendly..
+
     B,C,r,N = out.shape
     diags = r + 1 # include the main diagonal of ones
     if diags == N: # if already square, then don't bother
@@ -71,6 +77,9 @@ def de_minW(out):
                     temp = torch.diag(diagonal[:N-i], -i).to(out.device)
                     reconst[b][c] = torch.add(reconst[b][c], temp) # add the lower diagonal (symmetric)
     return reconst
+
+def check_symmetric(a, rtol=1e-05, atol=1e-08): # defaults of allclose
+    return torch.allclose(a, a.transpose(-2,-1), rtol, atol)
 
 class NormalizedCuts(AbstractDeclarativeNode):
     """
@@ -197,21 +206,20 @@ class NormalizedCuts(AbstractDeclarativeNode):
         return fY
 
 if __name__ == "__main__":
-
+    # Misc checks...
     print("\nCheck minified converts to correct full form")
-    A = torch.randn(3,1,1,5)
+    A = torch.randn(3,1,1,3)
     print(A[0][0])
     full_A = de_minW(A)
     print(full_A[0][0])
+    print(f'is symmetric: {str(check_symmetric(full_A))}')
 
-    exit()
     print("\nCheck manual_weight and deMinW provide consistent output")
     A = torch.randn(2,2,3,3)
     W_1 = manual_weight(A, 1, False)
     W_2 = manual_weight(A, 1, True)
     W_3 = de_minW(W_2)
-    print(W_1 == W_3)
-
+    print(f'conversion to/from consistent: {str(torch.allclose(W_1, W_3))}')
 
     # 1. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
     print("\nstandard tests")
