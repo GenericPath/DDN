@@ -21,6 +21,8 @@ net_sizes = [[1,32,64,32,6]]
 test = '' # Switch to --test when testing
 network = 0
 datasets = ['simple01']
+radiuses = [[1,5]]
+minifys = [[True]]
 
 script = 'main.py'
 folder = ""
@@ -53,31 +55,35 @@ for epoch in epochs:
                     continue
                 for net_size in net_sizes:
                     for dataset in datasets:
-                        i += 1
+                        for radius in radiuses:
+                            for minify in minifys:
+                                i += 1
 
-                        run_name = 'simple01minWRuns' + str(i)
-                        command = ["python", script, 
-                                    "-n", folder + str(run_name),
-                                    "-e", str(epoch),
-                                    "-b", str(batch_size),
-                                    "-lr", str(lr),
-                                    "-ti", str(total_images),
-                                    "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
-                                    "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
-                                    "--production", str(args.production),
-                                    "--network", str(network),
-                                    "--dataset", dataset
-                                    ] 
-                                    # "-m", momentum,
-                                    # "-v", val,
-                                    # "-s", seed,
-                                    # ""]
-                        print(command)
-                        f = open(out_file, "a")
-                        f.write(run_name + ' ' + str(command))
-                        f.close()
-                        p = Popen(command)
-                        (output, err) = p.communicate()
+                                run_name = 'createDatasets' + str(i)
+                                command = ["python", script, 
+                                            "-n", folder + str(run_name),
+                                            "-e", str(epoch),
+                                            "-b", str(batch_size),
+                                            "-lr", str(lr),
+                                            "-ti", str(total_images),
+                                            "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
+                                            "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
+                                            "--production", str(args.production),
+                                            "--network", str(network),
+                                            "--dataset", dataset,
+                                            "--radius", radius,
+                                            "--minify", minify
+                                            ] 
+                                            # "-m", momentum,
+                                            # "-v", val,
+                                            # "-s", seed,
+                                            # ""]
+                                print(command)
+                                f = open(out_file, "a")
+                                f.write(run_name + ' ' + str(command))
+                                f.close()
+                                p = Popen(command)
+                                (output, err) = p.communicate()
 
 # Was also run on larger models, except they were all the 300 model.
 # also these may have been run on AbstractDeclarativeNode instead of EqConstrainedDeclarativeNode
