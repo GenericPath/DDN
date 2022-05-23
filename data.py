@@ -59,7 +59,7 @@ def data(path, args, img_size=(32,32)):
             out.save(name, "PNG")
             images.append(name)
             
-            if 'weights' == args.dataset: # append weights matrix as answer
+            if 'weights' == args.dataset: # append weights matrix as answer TODO : make it create a separate weights dataset when making the main one... so they are the same images but for different stuff?
                 answers.append(manual_weight(name, r=args.radius, minVer=args.minify).squeeze()) 
             else: 
                 answers.append(answer) # otherwise append output as answer (for simple01, etc)

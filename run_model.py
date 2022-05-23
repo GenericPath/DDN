@@ -14,15 +14,15 @@ lrs = [1e-4]
 momentums = [0.9]
 vals = [0.1]
 seeds = [0]
-total_imageses = [100]
-net_sizes = [[1,32,64,32,6]]
+total_imageses = [10,100,1000]
+net_sizes = [[1,4,8,4,6]]
 
 # newer ones
 test = '' # Switch to --test when testing
-network = 0
-datasets = ['simple01']
-radiuses = [[1,5]]
-minifys = [[True]]
+networks = [0,1]
+datasets = ['simple01', 'weights']
+radiuses = [1,5]
+minifys = [True]
 
 script = 'main.py'
 folder = ""
@@ -57,33 +57,34 @@ for epoch in epochs:
                     for dataset in datasets:
                         for radius in radiuses:
                             for minify in minifys:
-                                i += 1
+                                for network in networks:
+                                    i += 1
 
-                                run_name = 'createDatasets' + str(i)
-                                command = ["python", script, 
-                                            "-n", folder + str(run_name),
-                                            "-e", str(epoch),
-                                            "-b", str(batch_size),
-                                            "-lr", str(lr),
-                                            "-ti", str(total_images),
-                                            "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
-                                            "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
-                                            "--production", str(args.production),
-                                            "--network", str(network),
-                                            "--dataset", dataset,
-                                            "--radius", radius,
-                                            "--minify", minify
-                                            ] 
-                                            # "-m", momentum,
-                                            # "-v", val,
-                                            # "-s", seed,
-                                            # ""]
-                                print(command)
-                                f = open(out_file, "a")
-                                f.write(run_name + ' ' + str(command))
-                                f.close()
-                                p = Popen(command)
-                                (output, err) = p.communicate()
+                                    run_name = 'run' + str(i) + 'net' + str(network) + 'r' + str(radius)
+                                    command = ["python", script, 
+                                                "-n", folder + str(run_name),
+                                                "-e", str(epoch),
+                                                "-b", str(batch_size),
+                                                "-lr", str(lr),
+                                                "-ti", str(total_images),
+                                                "-ns", str(net_size[0]), str(net_size[1]), str(net_size[2]),  str(net_size[3]), str(net_size[4]),
+                                                "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
+                                                "--production", str(args.production),
+                                                "--network", str(network),
+                                                "--dataset", dataset,
+                                                "--radius", radius,
+                                                "--minify", minify
+                                                ] 
+                                                # "-m", momentum,
+                                                # "-v", val,
+                                                # "-s", seed,
+                                                # ""]
+                                    print(command)
+                                    f = open(out_file, "a")
+                                    f.write(run_name + ' ' + str(command))
+                                    f.close()
+                                    p = Popen(command)
+                                    (output, err) = p.communicate()
 
 # Was also run on larger models, except they were all the 300 model.
 # also these may have been run on AbstractDeclarativeNode instead of EqConstrainedDeclarativeNode
