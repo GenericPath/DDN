@@ -71,9 +71,9 @@ for epoch in epochs:
                                                 "-gpu", str(1), # GPU-1 (hardcoded) is the assigned gpu for this research
                                                 "--production", str(args.production),
                                                 "--network", str(network),
-                                                "--dataset", dataset,
-                                                "--radius", radius,
-                                                "--minify", minify
+                                                "--dataset", str(dataset),
+                                                "--radius", str(radius),
+                                                "--minify", str(minify)
                                                 ] 
                                                 # "-m", momentum,
                                                 # "-v", val,
