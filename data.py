@@ -9,6 +9,7 @@ from torchvision import transforms
 from torch.utils.data import random_split
 
 from nc import manual_weight
+from model_loops import plot_multiple_images
 
 import argparse
 
@@ -29,6 +30,9 @@ def get_dataset(args):
     return train_loader, val_loader
 
 def get_weights_vars(args):
+    # TODO : convert this into args...
+    # so then the simple01 can be used as a minW version without needing it
+    # default to these values etc... should be quick and easy!
     r=1
     min=False   
     if 'weights' in args.dataset:
@@ -132,7 +136,7 @@ class SimpleDatasets(Dataset):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='debugging arguments')
-    parser.add_argument('--dataset', type=str, default='minW1', help='dataset to use: weights(r_val), simple01, minW(r_val) e.g. minW3')
+    parser.add_argument('--dataset', type=str, default='simple01', help='dataset to use: weights(r_val), simple01, minW(r_val) e.g. minW3')
     parser.add_argument('--total-images', '-ti', metavar='N', type=int, default=10, dest='total_images', help='total number of images in dataset')
     parser.add_argument('--production', action='store_true', help='Production mode: If true run in a separate folder on a copy of the python scripts')
 
@@ -141,3 +145,4 @@ if __name__ == '__main__':
     path = 'data/' + args.dataset + '/' + str(args.total_images) + '/'
 
     data(path, args)
+
