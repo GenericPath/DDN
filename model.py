@@ -4,12 +4,11 @@ import torch.nn as nn
 # local imports
 from nc import NormalizedCuts
 from node import DeclarativeLayer
-from data import get_weights_vars
 
 class Net(nn.Module):
     def __init__(self, args):
         super(Net, self).__init__()
-        self.weightsNet = WeightsNet(args) # TODO : change this to be PreNC if not doing the minW version..
+        self.weightsNet = WeightsNet(args)
         self.nc = NormalizedCuts(eps=1) # eps sets the absolute difference between objective solutions and 0
         self.decl = DeclarativeLayer(self.nc) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
         self.postNC = PostNC()
@@ -23,8 +22,8 @@ class Net(nn.Module):
 class WeightsNet(nn.Module):
     def __init__(self, args):
         super(WeightsNet, self).__init__()
-        self.r, self.min = get_weights_vars(args)
-        self.min = True # TODO : not hardcode this... (datasets simple/weights with a min option for either)
+        self.r = args.radius
+        self.min = args.minify
         self.block1 = self.conv_block(c_in=args.net_size[0], c_out=args.net_size[1], kernel_size=3, stride=1, padding=1)
         self.block2 = self.conv_block(c_in=args.net_size[1], c_out=args.net_size[2], kernel_size=3, stride=1, padding=1)
         self.block3 = self.conv_block(c_in=args.net_size[2], c_out=args.net_size[3], kernel_size=3, stride=1, padding=1)

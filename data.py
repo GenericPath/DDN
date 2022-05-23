@@ -29,24 +29,6 @@ def get_dataset(args):
 
     return train_loader, val_loader
 
-def get_weights_vars(args):
-    # TODO : convert this into args...
-    # so then the simple01 can be used as a minW version without needing it
-    # default to these values etc... should be quick and easy!
-    r=1
-    min=False   
-    if 'weights' in args.dataset:
-        # If weights, check if a r value is provided
-        if len(args.dataset) > len('weights'):
-            diff = len('weights')-len(args.dataset)
-            r = int(args.dataset[diff:])
-    elif 'minW' in args.dataset:    
-        min = True
-        if len(args.dataset) > len('minW'):
-            diff = len('minW')-len(args.dataset)
-            r = int(args.dataset[diff:])
-    return r, min
-
 def data(path, args, img_size=(32,32)):
     """ Generate a simple dataset (if it doesn't already exist) 
     path - example 'data/simple01/'
@@ -77,11 +59,10 @@ def data(path, args, img_size=(32,32)):
             out.save(name, "PNG")
             images.append(name)
             
-            if 'simple01' == args.dataset:
-                answers.append(answer)
-            else:
-                r, min = get_weights_vars(args)
-                answers.append(manual_weight(name, r=r, minVer=min).squeeze())
+            if 'weights' == args.dataset: # append weights matrix as answer
+                answers.append(manual_weight(name, r=args.radius, minVer=args.minify).squeeze()) 
+            else: 
+                answers.append(answer) # otherwise append output as answer (for simple01, etc)
 
         # write the answers to a txt file to visually inspect (while initially setting everything up)
         ans_out = open(path+'answers'+'.txt', 'w')
@@ -128,7 +109,7 @@ class SimpleDatasets(Dataset):
         
         if self.transform is not None:
             img = self.transform(img)
-            if 'simple01' in self.args.dataset:
+            if 'weights' not in self.args.dataset:
                 y_label = self.transform(y_label)
             
         return (img, y_label)
@@ -145,4 +126,7 @@ if __name__ == '__main__':
     path = 'data/' + args.dataset + '/' + str(args.total_images) + '/'
 
     data(path, args)
+
+    # test the dataset (and test plot_multiple_images)
+    # plot_multiple_images
 
