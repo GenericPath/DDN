@@ -90,7 +90,11 @@ class SimpleDatasets(Dataset):
         self.args = args
         # append = '../../' if args.production else ''
         append = ''
-        path = append + 'data/' + args.dataset + '/' + str(args.total_images) + '/' # location to store dataset
+        path = append + 'data/' + args.dataset + '/' + str(args.total_images) # location to store dataset
+        if args.minify:
+            path += 'min' + str(args.radius) + '/'
+        else:
+            path += '/'
         data(path, args) # make the dataset
 
         with open (path+'dataset', 'rb') as fp:
