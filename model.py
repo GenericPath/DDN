@@ -9,7 +9,7 @@ from data import get_weights_vars
 class Net(nn.Module):
     def __init__(self, args):
         super(Net, self).__init__()
-        self.weightsNet = WeightsNet(args)
+        self.weightsNet = WeightsNet(args) # TODO : change this to be PreNC if not doing the minW version..
         self.nc = NormalizedCuts(eps=1) # eps sets the absolute difference between objective solutions and 0
         self.decl = DeclarativeLayer(self.nc) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
         self.postNC = PostNC()
