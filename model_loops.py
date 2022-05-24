@@ -38,7 +38,7 @@ def test(val_loader, model, criterion, device, args):
     with torch.no_grad():
         avg_acc, avg_loss = 0,0
         i = 0
-        for input_batch, target_batch in tqdm(val_loader, desc=avg_acc):
+        for input_batch, target_batch in tqdm(val_loader, desc=avg_acc, ascii=True):
             i += 1
             input_batch, target_batch = input_batch.to(device), target_batch.to(device)
 
@@ -86,7 +86,7 @@ def validate(val_loader, model, device, criterion, scheduler):
 def train(train_loader, model, device, criterion, optimizer):
     model.train()
     train_accuracy, train_loss = 0,0
-    for input_batch, target_batch in tqdm(train_loader):
+    for input_batch, target_batch in tqdm(train_loader, ascii=True):
         input_batch, target_batch = input_batch.to(device), target_batch.to(device)
         output = model(input_batch)
         loss = criterion(output, target_batch)
