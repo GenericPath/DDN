@@ -98,19 +98,19 @@ def data(path, args, img_size=(32,32)):
 
         # write the answers to a txt file to visually inspect (while initially setting everything up)
         ans_out = open(path+'answers'+'.txt', 'w')
-        # if 'weights' == args.dataset:
-        #     for row in answers:
-        #         for item in row:
-        #             ans_out.write(str(item.item()) + ' ')
-        #         ans_out.write('\n')
-        #     ans_out.write('\n---\n')
-        # else:
-        for answer in answers: # [[b,c,row,item],...]
-            for rows in answer:
-                for item in rows:
+        if 'weights' == args.dataset and args.radius == 1:
+            for row in answers:
+                for item in row:
                     ans_out.write(str(item.item()) + ' ')
                 ans_out.write('\n')
             ans_out.write('\n---\n')
+        else:
+            for answer in answers: # [[b,c,row,item],...]
+                for rows in answer:
+                    for item in rows:
+                        ans_out.write(str(item.item()) + ' ')
+                    ans_out.write('\n')
+                ans_out.write('\n---\n')
         ans_out.close()
 
         # save the input, output pairs to a file
