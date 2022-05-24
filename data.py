@@ -8,10 +8,42 @@ import cv2
 from torchvision import transforms
 from torch.utils.data import random_split
 
-from nc import manual_weight
-from model_loops import plot_multiple_images
+from nc import de_minW, manual_weight
 
 import argparse
+
+# plot_multiple_images
+import matplotlib.pyplot as plt
+import torchvision.transforms.functional as F
+
+def plot_multiple_images(batch_no, images, labels=None, minified=False, figsize=[32,32]):
+    """
+    Images [input_batch, output_batch, ...]
+    """
+    # TODO : use https://pytorch.org/vision/main/auto_examples/plot_visualization_utils.html instead?
+
+    # settings
+    N = min(map(len, images)) # length of the shortest array
+    nrows, ncols = N, len(images)  # array of sub-plots
+
+    # create figure (fig), and array of axes (ax)
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize, squeeze=False)
+    # can access individual plot with ax[row][col]
+
+    # plot image on each sub-plot
+    for i, row_ax in enumerate(ax): # could flatten if not explicitly doing in pairs (ax.flat)
+        for j in range(ncols):
+            img = images[j][i].cpu()
+            if j == 1 and minified:
+                img = de_minW(img[None,None,:])[0][0] # exapnd with dummy batches and channels  
+            img = F.to_pil_image(img)
+            row_ax[j].imshow(np.asarray(img))
+            if labels is not None:
+                row_ax[j].set_title(str(labels[i]))
+
+    plt.tight_layout()
+    plt.savefig('experiments/batch-'+str(batch_no)+'.png')
+    plt.close()
 
 def get_dataset(args):
     train_dataset = SimpleDatasets(args, transform=transforms.ToTensor()) #path/dataset is a pickle containing (image paths, targets)
@@ -66,6 +98,13 @@ def data(path, args, img_size=(32,32)):
 
         # write the answers to a txt file to visually inspect (while initially setting everything up)
         ans_out = open(path+'answers'+'.txt', 'w')
+        # if 'weights' == args.dataset:
+        #     for row in answers:
+        #         for item in row:
+        #             ans_out.write(str(item.item()) + ' ')
+        #         ans_out.write('\n')
+        #     ans_out.write('\n---\n')
+        # else:
         for answer in answers: # [[b,c,row,item],...]
             for rows in answer:
                 for item in rows:
@@ -121,15 +160,38 @@ class SimpleDatasets(Dataset):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='debugging arguments')
-    parser.add_argument('--dataset', type=str, default='simple01', help='dataset to use: weights(r_val), simple01, minW(r_val) e.g. minW3')
+    # main args
+    parser.add_argument('--dataset', type=str, default='weights', help='dataset to use: weights, simple01')
     parser.add_argument('--total-images', '-ti', metavar='N', type=int, default=10, dest='total_images', help='total number of images in dataset')
-    parser.add_argument('--production', action='store_true', help='Production mode: If true run in a separate folder on a copy of the python scripts')
+    parser.add_argument('--production', default=False, type=bool, help='Production mode: If true run in a separate folder on a copy of the python scripts')
+
+    # minify arguments
+    parser.add_argument('--minify', default=True, type=bool, help='minify the weights mode (for the PreNC portion)')
+    parser.add_argument('--radius', '-r', default=1, type=int, help='radius value for expected weights (only relevant for minified version)')
+
+    # get_dataset args
+    parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=1, help='Batch size')
+    parser.add_argument('--validation', '-v', dest='val', type=float, default=0.1,
+                    help='Percent of the data that is used as validation (0-1)')
+    parser.add_argument('--shuffle', type=bool, default=True, help='shuffle batches')
 
     args = parser.parse_args()
     args.production = False
-    path = 'data/' + args.dataset + '/' + str(args.total_images) + '/'
 
-    data(path, args)
+    append = ''
+    path = append + 'data/' + args.dataset + '/' + str(args.total_images) # location to store dataset
+    if args.minify:
+        path += 'min' + str(args.radius) + '/'
+    else:
+        path += '/'
+
+    data(path, args, img_size=(32,32))
+    train_loader, val_loader = get_dataset(args)
+    for i, (input, output) in enumerate(train_loader):
+        plot_multiple_images(i, [input, output], minified=(args.dataset == 'weights'))
+        print(i)
+        if i > 10:
+            exit()
 
     # test the dataset (and test plot_multiple_images)
     # plot_multiple_images
