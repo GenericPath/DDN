@@ -29,13 +29,28 @@ def manual_weight(name, r=1, minVer=False):
     I = I.flatten()
     for b in range(0, B):
         for c in range(0, C):
-            for u in range(N):
-                for v in range(u,N): # only act on the upper triangle
+            for u in range(N): # could use step size of r to improve speed?
+                end = min(u+r+1, N) # upper triangle, only traverse as far as needed
+                for v in range(u,end):
                     if np.linalg.norm(u-v) > r: # 4-way connection
                         continue
                     # Symmetric
-                    W[b][c][u][v] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0 # np.linalg.norm(I[u]-I[v])
+                    W[b][c][u][v] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0
                     W[b][c][v][u] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0
+
+    # testing = False
+    # if testing:
+    #     W_test = torch.zeros((B,C,N,N))
+    #     for b in range(0, B):
+    #         for c in range(0, C):
+    #             for u in range(N):
+    #                 for v in range(N):
+    #                     if np.linalg.norm(u-v) > r: # 4-way connection
+    #                         continue
+    #                     # Symmetric
+    #                     W_test[b][c][u][v] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0
+    #                     W_test[b][c][v][u] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0
+    #     print(torch.allclose(W, W_test))
     
     if minVer:
         # This will create an output which is just the important non-zero diagonals
