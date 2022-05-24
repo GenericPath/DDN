@@ -2,30 +2,7 @@
 # Garth Wales - 2022
 import torch, os
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-
-def plot_multiple_images(batch_no, images, labels=None, figsize=[32,32]):
-    """
-    Images [input_batch, output_batch, ...]
-    """
-    # settings
-    N = min(map(len, images)) # length of the shortest array
-    nrows, ncols = N, len(images)  # array of sub-plots
-
-    # create figure (fig), and array of axes (ax)
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
-    # can access individual plot with ax[row][col]
-
-    # plot image on each sub-plot
-    for i, row_ax in enumerate(ax): # could flatten if not explicitly doing in pairs (ax.flat)
-        for j in range(ncols):
-            row_ax[j].imshow(images[j][i].cpu())
-            if labels is not None:
-                row_ax[j].set_title(str(labels[i]))
-
-    plt.tight_layout(True)
-    plt.savefig('batch-'+str(batch_no)+'.png')
-    plt.close()
+from data import plot_multiple_images
 
 def test(val_loader, model, criterion, device, args):
     model.eval()
