@@ -77,7 +77,7 @@ def de_minW(out):
 
     B,C,r,N = out.shape
     diags = r + 1 # include the main diagonal of ones
-    if diags == N: # if already square, then don't bother
+    if diags == N + 1: # if already square, then don't bother
         return out
     reconst = torch.zeros((B,C,N,N), device=out.device)
     for b in range(B):
@@ -178,11 +178,12 @@ class NormalizedCuts(AbstractDeclarativeNode):
         Solve the normalized cuts using eigenvectors (produces single cut, no recursion yet)
 
         Arguments:
-            x: (b, c, N, N) Torch tensor,
+            A: (b, c, N, N) Torch tensor,
                 batch, channels of affinity/weight tensors (N = x * y from orignal x,y images)
 
         TODO: pass a parameter to avoid hardcoded output dimensions
         """
+        A = A.detach() # TODO : verify if this breaks anything
         out_size = 32
         # Implementation notes:
         # - requires einsum's to act on batch. Otherwise torch complains about tensors not being in graph being differentiated
@@ -209,7 +210,10 @@ class NormalizedCuts(AbstractDeclarativeNode):
         # eigenvector(s) reshaped to match original image size
         num_eigs = 1
         # TODO: verify if the eig is the correct one... (narrowed to index 1 not index 0, but possible it already removes this one)
-        return v.narrow(-2, 1, num_eigs).squeeze(1).reshape(b, num_eigs, out_size, out_size), None
+
+        # Detach inputs from graph, attach only the output (or if using optimisation to solve you can with torch.enable_grad() ( ... optim ))
+        output = v.narrow(-2, 1, num_eigs).squeeze(1).reshape(b, num_eigs, out_size, out_size).requires_grad_(True)
+        return output, None
     
     def test(self, x, y):
         """ Test gradient """
@@ -251,11 +255,11 @@ if __name__ == "__main__":
     # 2. Confirm the node solves the correct problems
     eqconstBool = issubclass(NormalizedCuts, EqConstDeclarativeNode) # If AbstractDeclarativeNode then false, remove this later?...
     fSolved = node.objective(A, y)
-    print(f'Max: {torch.max(fSolved)}, Min: {torch.min(fSolved)}, Mean: {torch.mean(fSolved)}, std var: {torch.std(fSolved)}')
+    print(f'objective - Max: {torch.max(fSolved)}, Min: {torch.min(fSolved)}, Mean: {torch.mean(fSolved)}, std var: {torch.std(fSolved)}')
     if eqconstBool:
         # TODO: verify why this is not correct?
         fConsts = node.equality_constraints(A, y)
-        print(f'Max: {torch.max(fConsts)}, Min: {torch.min(fConsts)}, Mean: {torch.mean(fConsts)}, std var: {torch.std(fConsts)}')
+        print(f'eqconst - Max: {torch.max(fConsts)}, Min: {torch.min(fConsts)}, Mean: {torch.mean(fConsts)}, std var: {torch.std(fConsts)}')
 
     print('\nminVer tests')
     # 3. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
@@ -270,10 +274,10 @@ if __name__ == "__main__":
     # 4. Confirm the node solves the correct problems
     eqconstBool = issubclass(NormalizedCuts, EqConstDeclarativeNode) # If AbstractDeclarativeNode then false, remove this later?...
     fSolved = node.objective(A, y)
-    print(f'Max: {torch.max(fSolved)}, Min: {torch.min(fSolved)}, Mean: {torch.mean(fSolved)}, std var: {torch.std(fSolved)}')
+    print(f'objective - Max: {torch.max(fSolved)}, Min: {torch.min(fSolved)}, Mean: {torch.mean(fSolved)}, std var: {torch.std(fSolved)}')
     if eqconstBool:
         # TODO: verify why this is not correct?
         fConsts = node.equality_constraints(A, y)
-        print(f'Max: {torch.max(fConsts)}, Min: {torch.min(fConsts)}, Mean: {torch.mean(fConsts)}, std var: {torch.std(fConsts)}')
+        print(f'eqconst - Max: {torch.max(fConsts)}, Min: {torch.min(fConsts)}, Mean: {torch.mean(fConsts)}, std var: {torch.std(fConsts)}')
 
     
