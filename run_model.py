@@ -59,7 +59,8 @@ for epoch in epochs:
                             for minify in minifys:
                                 for network in networks:
                                     i += 1
-
+                                    # TODO : add dataset size to this (and any other relevant ones...)
+                                    # maybe automatically add all the things that have multiple options?
                                     run_name = 'run' + str(i) + 'net' + str(network) + 'r' + str(radius)
                                     command = ["python", script, 
                                                 "-n", folder + str(run_name),
