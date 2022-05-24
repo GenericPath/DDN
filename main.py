@@ -17,7 +17,7 @@ from model import Net, WeightsNet
 # from torchsummary import summary
 
 parser = argparse.ArgumentParser(description='Train the UNet on images and binary target masks')
-parser.add_argument('--name', '-n', type=str, default='', help='Tensorboard run name')
+parser.add_argument('--name', '-n', type=str, default='test', help='Tensorboard run name')
 parser.add_argument('--epochs', '-e', metavar='E', type=int, default=20, help='Number of epochs')
 parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=1, help='Batch size')
 parser.add_argument('--learning-rate', '-lr', metavar='LR', type=float, default=1e-4,
@@ -58,8 +58,8 @@ def main():
         random.seed(args.seed)
         torch.manual_seed(args.seed)
     cudnn.benchmark = True # Cuda optimisations when using a fixed input size
-    # device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
-    device = 'cpu'
+    device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
+    # device = 'cpu' # hardcode to use cpu when neccessary
     print(f'Using device {device}')
 
     if args.name:
