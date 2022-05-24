@@ -30,10 +30,10 @@ def manual_weight(name, r=1, minVer=False):
     for b in range(0, B):
         for c in range(0, C):
             for u in range(N):
-                for v in range(N):
+                for v in range(u,N): # only act on the upper triangle
                     if np.linalg.norm(u-v) > r: # 4-way connection
                         continue
-                    # Symmetric, TODO : make this more efficient (skip unneccessary loops)
+                    # Symmetric
                     W[b][c][u][v] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0 # np.linalg.norm(I[u]-I[v])
                     W[b][c][v][u] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0
     
