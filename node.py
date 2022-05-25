@@ -838,10 +838,12 @@ class DeclarativeFunction(torch.autograd.Function):
     """
     @staticmethod
     def forward(ctx, problem, *inputs):
-        # NOTE : ensure the problem.solve detaches the inputs (a tuple of inputs) within its routine 
+        # NOTE - Garth Wales 2022: 
+        #           ensure the problem.solve detaches the inputs (a tuple of inputs) within its routine 
         #           otherwise it will include the steps used to solve in the computational graph
-        #           AND
+        #       AND
         #           ensure it returns a object with requires_grad_(True), pytorch will complain otherwise
+        #           despite the gradient being calculated in DeclarativeFunction.backward
         output, solve_ctx = torch.no_grad()(problem.solve)(*inputs)
         ctx.save_for_backward(output, *inputs)
         ctx.problem = problem
