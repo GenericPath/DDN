@@ -15,7 +15,7 @@ momentums = [0.9]
 vals = [0.1]
 seeds = [0]
 total_imageses = [10]
-net_sizes = [[1,4,8,4,-1]] # the -1 is replaced by radius value
+net_sizes = [[1,4,8,4,1024]] # the -1 is replaced by radius value
 
 # newer ones
 test = '' # Switch to --test when testing
@@ -56,8 +56,9 @@ for epoch in epochs:
                 for net_size in net_sizes:
                     for dataset in datasets:
                         for radius in radiuses:
-                            net_size[-1] = radius # replace the output size of weights network to radius
                             for minify in minifys:
+                                if minify:
+                                    net_size[-1] = radius # replace the output size of weights network to radius
                                 for network in networks:
                                     i += 1
                                     # TODO : add dataset size to this (and any other relevant ones...)
