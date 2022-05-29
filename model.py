@@ -31,12 +31,14 @@ class WeightsNet(nn.Module):
         super(WeightsNet, self).__init__()
         self.r = args.radius
         self.min = args.minify
+        self.net_no = args.network
+        # CNN layers
         self.block1 = self.conv_block(c_in=args.net_size[0], c_out=args.net_size[1], kernel_size=3, stride=1, padding=1)
         self.block2 = self.conv_block(c_in=args.net_size[1], c_out=args.net_size[2], kernel_size=3, stride=1, padding=1)
         self.block3 = self.conv_block(c_in=args.net_size[2], c_out=args.net_size[3], kernel_size=3, stride=1, padding=1)
-        if self.min: self.lastcnn = nn.Conv2d(in_channels=args.net_size[3], out_channels=self.r+1, kernel_size=3, stride=1, padding=1)
-        else: self.lastcnn = nn.Conv2d(in_channels=args.net_size[3], out_channels=args.net_size[4], kernel_size=3, stride=1, padding=1)
+        self.lastcnn = nn.Conv2d(in_channels=args.net_size[3], out_channels=args.net_size[4], kernel_size=3, stride=1, padding=1)
         self.restrict = nn.Sigmoid() # was previously a ReLU
+
     def forward(self, x):
         x = self.block1(x)
         x = self.block2(x)
@@ -45,8 +47,11 @@ class WeightsNet(nn.Module):
 
         # combine the 32x32 image filters into the correct output size (full matrix or not...)
         if self.min: 
-            x = x.view(x.size(0), 1, self.r+1, 1024) # r+1 as radius + itself
-            x = de_minW(x)
+            if self.net_no == 0: # Passes into NC node
+                x = x.view(x.size(0), 1, self.r, 1024)
+                x = de_minW(x)
+            elif self.net_no == 1: # Just trains for weights as output (minified)
+                x = x.view(x.size(0), self.r, 1024)
         else: 
             x = x.view(x.size(0), 1, 1024, 1024) # full matrix (with majority zeros)
 
