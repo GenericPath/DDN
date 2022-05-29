@@ -37,6 +37,7 @@ class WeightsNet(nn.Module):
         self.block2 = self.conv_block(c_in=args.net_size[1], c_out=args.net_size[2], kernel_size=3, stride=1, padding=1)
         self.block3 = self.conv_block(c_in=args.net_size[2], c_out=args.net_size[3], kernel_size=3, stride=1, padding=1)
         self.lastcnn = nn.Conv2d(in_channels=args.net_size[3], out_channels=args.net_size[4], kernel_size=3, stride=1, padding=1)
+        # NOTE: net_size[4] is automatically changed to self.r in run_model if needed, but otherwise it is automatically changed
         self.restrict = nn.Sigmoid() # was previously a ReLU
 
     def forward(self, x):
@@ -51,7 +52,10 @@ class WeightsNet(nn.Module):
                 x = x.view(x.size(0), 1, self.r, 1024)
                 x = de_minW(x)
             elif self.net_no == 1: # Just trains for weights as output (minified)
-                x = x.view(x.size(0), self.r, 1024)
+                if self.r == 1: # this is because of the data.py code, TODO: fix later
+                    x = x.view(x.size(0), 1024)
+                else:
+                    x = x.view(x.size(0), self.r, 1024)
         else: 
             x = x.view(x.size(0), 1, 1024, 1024) # full matrix (with majority zeros)
 
