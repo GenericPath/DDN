@@ -121,7 +121,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
             objectives: (b, c, x) Torch tensor,
                 batch, channels of objective function evaluations
         """
-        x = de_minW(x) # check if needs to be converted from minVer style
+        # x = de_minW(x) # check if needs to be converted from minVer style
 
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
         b, c, N = y.shape
@@ -153,7 +153,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
             equalities: (b, c, x) Torch tensor,
                 batch, channel of constraint calculation scalars
         """
-        x = de_minW(x) # check if needs to be converted from minVer style
+        # x = de_minW(x) # check if needs to be converted from minVer style
 
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
         b, c, N = y.shape
