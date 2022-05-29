@@ -14,7 +14,7 @@ lrs = [1e-3,1e-4, 1e-5]
 momentums = [0.9]
 vals = [0.1]
 seeds = [0]
-total_imageses = [10]
+total_imageses = [10, 1000]
 net_sizes = [[1,4,8,4,1024]] # the -1 is replaced by radius value
 
 # newer ones
@@ -22,7 +22,7 @@ test = '' # Switch to --test when testing
 networks = [1]
 datasets = ['weights']
 radiuses = [1,5]
-minifys = [True]
+minifys = [True, False]
 
 script = 'main.py'
 folder = ""
@@ -45,6 +45,7 @@ if args.production:
 # TODO : see what the outputs look like
     # code has been implemented but not tested yet
 # TODO : train minW on declarative network
+# TODO : the other todos in my personal OneNote :)
 
 i=0
 for epoch in epochs:
