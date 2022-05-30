@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from PIL import Image
 import cv2
+from tqdm import tqdm
 
 from torchvision import transforms
 from torch.utils.data import random_split
@@ -103,7 +104,7 @@ def data(path, args, img_size=(32,32)):
         start = len(images)
     print(f'loaded {start} existing images')
 
-    for i in range(start, args.total_images):
+    for i in tqdm(range(start, args.total_images)):
         # TODO: When creating dataset, enforce constraint of 50% white, 50% black to ensure nothing funny is happening
 
         # L gives 8-bit pixels (0-255 range of white to black)
