@@ -19,8 +19,8 @@ net_sizes = [[1,4,8,4,1024]] # the -1 is replaced by radius value
 
 # newer ones
 test = '' # Switch to --test when testing
-networks = [1]
-datasets = ['weights']
+networks = [0,1]
+datasets = ['simple01']
 radiuses = [1,5]
 minifys = [True, False]
 
