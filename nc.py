@@ -62,7 +62,7 @@ def manual_weight(name, r=1, minVer=False):
                     temp_diag = torch.diag(W[b][c],i)
                     pad = torch.zeros(N-len(temp_diag)) # pad with 0's to make it so it will fit
                     out[b][c][index] = torch.cat([temp_diag, pad])
-        W = out
+        W = out # size is [1,1,r,N]
     return W
 
 def de_minW(out):
@@ -76,10 +76,11 @@ def de_minW(out):
     # would be much more computationally friendly..
 
     B,C,r,N = out.shape
-    diags = r + 1 # include the main diagonal of ones
-    if diags == N + 1: # if already square, then don't bother
+    if r == N: # if already square, then don't bother
         return out
+
     reconst = torch.zeros((B,C,N,N), device=out.device)
+    diags = r + 1 # include the main diagonal of ones
     for b in range(B):
         for c in range(C):
             for i  in range(0, diags):
