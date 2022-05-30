@@ -52,10 +52,7 @@ class WeightsNet(nn.Module):
                 x = x.view(x.size(0), 1, self.r, 1024)
                 x = de_minW(x)
             elif self.net_no == 1: # Just trains for weights as output (minified)
-                if self.r == 1: # this is because of the data.py code, TODO: fix later
-                    x = x.view(x.size(0), 1024)
-                else:
-                    x = x.view(x.size(0), self.r, 1024)
+                x = x.view(x.size(0), self.r, 1024)
         else: 
             x = x.view(x.size(0), 1, 1024, 1024) # full matrix (with majority zeros)
 
