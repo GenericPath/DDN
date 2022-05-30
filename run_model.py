@@ -42,10 +42,6 @@ if args.production:
     script = folder + script
 
 # TODO : add profiling (torch.profiler) from pip install pytorch_tb_profiler or w/e
-# TODO : see what the outputs look like
-    # code has been implemented but not tested yet
-# TODO : train minW on declarative network
-# TODO : the other todos in my personal OneNote :)
 
 i=0
 for epoch in epochs:
