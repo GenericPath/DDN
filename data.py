@@ -179,7 +179,7 @@ class SimpleDatasets(Dataset):
     
     # TODO: actually use these helper functions
     def get_image(self, index):
-        image = cv2.imread(self.images[index])
+        image = cv2.imread(self.images[index], 0)
         return self.transform(image) if self.transform is not None else image
 
     def get_segmentation(self, index):
