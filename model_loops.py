@@ -2,6 +2,8 @@
 # Garth Wales - 2022
 import torch, os
 from tqdm import tqdm
+
+# local imports
 from data import plot_multiple_images
 
 def test(val_loader, model, criterion, device, args):
@@ -30,7 +32,7 @@ def test(val_loader, model, criterion, device, args):
             avg_acc += test_accuracy
             avg_loss += val_loss.item()
 
-            plot_multiple_images(i, [input_batch, output], labels=batch_accuracy, figsize=[x,y])
+            plot_multiple_images(i, [input_batch, output], dir=dir, labels=batch_accuracy, figsize=[x,y])
 
         avg_acc /= len(val_loader)
         avg_loss /= len(val_loader)
@@ -80,3 +82,47 @@ def train(train_loader, model, device, criterion, optimizer):
     train_accuracy /= len(train_loader)
     train_loss/= len(train_loader) # Loss is averaged for batch size, to avoid having to tune for scaling size of learning rates etc
     return train_accuracy, train_loss
+
+if __name__ == '__main__':
+    import torch.nn as nn
+
+    # local imports
+    from net_argparser import net_argparser
+    from data import get_dataset
+    from model import Net, WeightsNet
+
+    # 1. Verify accuracy for train and validation works on known samples (and pertubations)
+    args = net_argparser()
+
+    # hardcode some values :)
+    args.network = 1
+    args.batch_size = 1
+    args.minify = True
+    args.dataset = 'simple01'
+
+    # load everything
+    if args.network == 1:
+        model = WeightsNet(args)
+    else:
+        model = Net(args)
+    
+    criterion = nn.BCEWithLogitsLoss()
+
+    train_loader, val_loader = get_dataset(args)
+
+    for input_batch, target_batch in tqdm(train_loader, ascii=True):
+        output = model(input_batch)
+        train_loss = criterion(output, target_batch)
+        # convert to binary classification outputs?
+        output_new = (output > 0.5).float()
+
+        b,c,x,y = target_batch.shape
+        batch_accuracy = (output_new.eq(target_batch).float().sum(dim=(-2,-1)) / (x*y)) * 100 # outputs: [b * 1] where 1 is the percentage accuracy
+        test_accuracy = output_new.eq(target_batch).float().mean()
+
+
+
+    # TODO: also double check everything is good with the model_loops :)
+    # t_acc, t_loss = train(train_loader, model, 'cpu', criterion, optimizer)
+    # v_acc, v_loss = validate(val_loader, model, 'cpu', criterion, scheduler)
+
