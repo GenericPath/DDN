@@ -86,3 +86,5 @@ class PostNC(nn.Module):
             nn.ReLU()
             )
         return seq_block
+
+# TODO: add tests which verify input, output pairs have correct dimensions
