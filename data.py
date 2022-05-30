@@ -121,6 +121,8 @@ def data(path, args, img_size=(32,32)):
         out.save(name, "PNG")
         images.append(name)
         
+        # TODO: STORE RADIUS AND WEIGHTS IN A SEPARATE PICKLE
+        # FOR NOW ONLY USE ONE VALUE
         weights.append(manual_weight(name, r=args.radius, minVer=args.minify).squeeze(0)) 
         # squeeze(0) to remove batch dimension (but maintain channels or radius which could be 1)
         answers.append(answer) 
