@@ -17,8 +17,8 @@ def net_argparser():
     parser.add_argument('--validation', '-v', dest='val', type=float, default=0.1,
                         help='Percent of the data that is used as validation (0-1)')
     parser.add_argument('--seed', '-s', metavar='S', type=int, default=None, help='Seed to get consistent outcomes')
-    parser.add_argument('--total-images', '-ti', metavar='N', type=int, default=300, dest='total_images', help='total number of images in dataset')
-    parser.add_argument('--net-size', '-ns', metavar='[...]', nargs='+', type=int, default=[1,128,256,512,1024], dest='net_size', help='number of filters for the 3 layers')
+    parser.add_argument('--total-images', '-ti', metavar='N', type=int, default=1000, dest='total_images', help='total number of images in dataset')
+    parser.add_argument('--net-size', '-ns', metavar='[...]', nargs='+', type=int, default=[1,4,8,4,1024], dest='net_size', help='number of filters for the 3 layers')
     parser.add_argument('--gpu-id', '-gpu', type=str, default='1', dest='gpu', help='which id gpu to utilise (if present)')
 
     # currently no options to use
@@ -34,8 +34,8 @@ def net_argparser():
     parser.add_argument('--network', default=0, type=int, help='network to use: 0=Net (Weights->NC->Post), 1=WeightsNet (Weights)')
 
     # newest
-    parser.add_argument('--minify', default=False, type=bool, help='minify the weights mode (for the PreNC portion)')
-    parser.add_argument('--radius', '-r', default=1, type=int, help='radius value for expected weights (only relevant for minified version)')
+    parser.add_argument('--minify', default=True, type=bool, help='minify the weights mode (for the PreNC portion)')
+    parser.add_argument('--radius', '-r', default=5, type=int, help='radius value for expected weights (only relevant for minified version)')
 
     # TODO : add option to switch between eqconst
     parser.add_argument('--eqconst', default=True, type=bool, help='equality constrained or non equality constrained')
