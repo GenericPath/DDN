@@ -83,24 +83,29 @@ def train(train_loader, model, device, criterion, optimizer):
     train_loss/= len(train_loader) # Loss is averaged for batch size, to avoid having to tune for scaling size of learning rates etc
     return train_accuracy, train_loss
 
+def accuracy(output, target):
+    output = (output > 0.5).float()
+    return output.eq(target).float().mean()
+
 if __name__ == '__main__':
     import torch.nn as nn
+    from torchvision import transforms
 
     # local imports
     from net_argparser import net_argparser
-    from data import get_dataset
+    from data import get_dataset, SimpleDatasets
     from model import Net, WeightsNet
 
-    # 1. Verify accuracy for train and validation works on known samples (and pertubations)
+    # 1. Verify accuracy works on known samples (and pertubations), plus does the model sizes match expected
     args = net_argparser()
 
     # hardcode some values :)
-    args.network = 1
     args.batch_size = 1
     args.minify = True
     args.dataset = 'simple01'
 
-    # load everything
+    args.network = 0
+     # load everything
     if args.network == 1:
         model = WeightsNet(args)
     else:
@@ -108,17 +113,31 @@ if __name__ == '__main__':
     
     criterion = nn.BCEWithLogitsLoss()
 
-    train_loader, val_loader = get_dataset(args)
+    train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
+    sample=[train_dataset.get_image(0)[None,:], train_dataset.get_segmentation(0), train_dataset.get_weights(0)]
+    # add batch dimension to input image with [None,:]
 
-    for input_batch, target_batch in tqdm(train_loader, ascii=True):
-        output = model(input_batch)
-        train_loss = criterion(output, target_batch)
-        # convert to binary classification outputs?
-        output_new = (output > 0.5).float()
+    print(f'accuracy input input {accuracy(sample[0], sample[0])}')
+    print(f'accuracy seg seg {accuracy(sample[1], sample[1])}')
+    print(f'accuracy net0(input) seg {accuracy(model(sample[0]), sample[1])}')
 
-        b,c,x,y = target_batch.shape
-        batch_accuracy = (output_new.eq(target_batch).float().sum(dim=(-2,-1)) / (x*y)) * 100 # outputs: [b * 1] where 1 is the percentage accuracy
-        test_accuracy = output_new.eq(target_batch).float().mean()
+    model = WeightsNet(args)
+    print(f'accuracy net0(input) weights {accuracy(model(sample[0]), sample[2])}')
+
+    # TODO: test loss, test accuracy with progressively more random flipped bits
+    # see if it all functions
+
+    # TODO: test if the way it is used in main via train/validate makes any sense
+
+    # for input_batch, target_batch in tqdm(train_loader, ascii=True):
+    #     output = model(input_batch)
+    #     train_loss = criterion(output, target_batch)
+    #     # convert to binary classification outputs?
+    #     output_new = (output > 0.5).float()
+
+    #     b,c,x,y = target_batch.shape
+    #     batch_accuracy = (output_new.eq(target_batch).float().sum(dim=(-2,-1)) / (x*y)) * 100 # outputs: [b * 1] where 1 is the percentage accuracy
+    #     test_accuracy = output_new.eq(target_batch).float().mean()
 
 
 
