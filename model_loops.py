@@ -109,7 +109,7 @@ if __name__ == '__main__':
     args.batch_size = 1
     args.minify = True
     args.dataset = 'simple01'
-    args.x, args.y = (8,8)
+    args.img_size = (8,8)
 
     args.network = 0
      # load everything

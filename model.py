@@ -32,8 +32,8 @@ class WeightsNet(nn.Module):
         self.r = args.radius
         self.min = args.minify
         self.net_no = args.network
-        self.size = (args.x, args.y)
-        self.last_dim = args.x * args.y
+        self.img_size = args.img_size
+        self.last_dim = self.img_size[0] * self.img_size[1]
 
         # CNN layers
         self.block1 = self.conv_block(c_in=args.net_size[0], c_out=args.net_size[1], kernel_size=3, stride=1, padding=1)
@@ -77,7 +77,7 @@ class PostNC(nn.Module):
         self.block2 = self.conv_block(c_in=4, c_out=8, kernel_size=3, stride=1, padding=1)
         self.lastcnn = nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, stride=1, padding=1)
     def forward(self, x):
-        x = x.view(x.size(0), 1, self.args.x, self.args.y)
+        x = x.view(x.size(0), 1, self.self.img_size[0], self.self.img_size[1])
         x = self.block1(x)
         x = self.block2(x)
         x = self.lastcnn(x)

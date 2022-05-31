@@ -75,7 +75,7 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
     plt.close()
 
 def make_paths(args):
-    img_size = (args.x, args.y)
+    img_size = args.img_size
     path = 'data/' + args.dataset + '/'
     full_path = path+f'{img_size[0]}-{img_size[1]}/'    
     if not os.path.exists(full_path+'images/'):
@@ -110,7 +110,7 @@ def data(full_path, weights_name, args):
     total_images - total number of images to create for the dataset
     image size - (w,h)
     """
-    img_size = (args.x,args.y)
+    img_size = args.img_size
     images, answers, weights = load_dataset(full_path+'dataset', full_path+weights_name, args.total_images)
 
     start = len(images)
@@ -184,7 +184,7 @@ class SimpleDatasets(Dataset):
         """
         self.network = args.network
         self.total_images = args.total_images
-        self.size = (args.x, args.y)
+        self.size = args.img_size
         self.transform = transform
 
         full_path, weights_name = make_paths(args)
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     args.total_images = 1000
     args.minify = True
     args.radius = 5
-    args.x, args.y = (32,32) # the default is 32,32 anyway
+    args.img_size = [32,32] # the default is 32,32 anyway
 
     # TODO: check loading minified weights and non-minified weights is equivalent
     
