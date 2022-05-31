@@ -28,7 +28,7 @@ def get_dataset(args):
     n_val = int(len(train_dataset) * args.val)
     n_train = len(train_dataset) - n_val
 
-    train_set, val_set = random_split(train_dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0)) # Consistent splits for everything
+    train_set, val_set = random_split(train_dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0)) # Consistent splits for everything, TODO: args.seed
     train_loader = torch.utils.data.DataLoader(train_set, pin_memory=True,
                                                 batch_size=args.batch_size, shuffle=args.shuffle)
     val_loader = torch.utils.data.DataLoader(val_set, pin_memory=True,
@@ -74,14 +74,25 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
     plt.savefig(dir+'batch-'+str(batch_no)+'.png')
     plt.close()
 
-def load_dataset(path, weights_path, num_images):
+def make_paths(img_size, args):
+    path = 'data/' + args.dataset + '/'
+    full_path = path+f'{img_size[0]}-{img_size[1]}/'    
+    if not os.path.exists(full_path+'images/'):
+        os.makedirs(full_path+'images/')
+        print(full_path+'images/' + ' has been made')
+
+    weights_name ='weights-min'+str(args.minify)+'-r'+str(args.radius)
+
+    return full_path, weights_name
+
+def load_dataset(full_path, weights_path, num_images):
     """
     opens the path/dataset file and returns
     (inputs (images), outputs (segmentations), intermediate (weights))
     """
     inputs,outputs,weights = [],[],[]
-    if os.path.isfile(path+'dataset'):
-        with open (path+'dataset', 'rb') as fp:
+    if os.path.isfile(full_path):
+        with open (full_path, 'rb') as fp:
             output = pickle.load(fp)
             inputs = output[0][:num_images] # images
             outputs = output[1][:num_images] # segmentations
@@ -92,30 +103,17 @@ def load_dataset(path, weights_path, num_images):
                 weights = output[:num_images] # images
     return inputs, outputs, weights
 
-def data(path, args, img_size=(32,32)):
+def data(full_path, weights_name, args, img_size=(32,32)):
     """ Generate a simple dataset (if it doesn't already exist) 
     path - example 'data/simple01/'
     total_images - total number of images to create for the dataset
     image size - (w,h)
     """
-    if not os.path.exists(path):
-        os.makedirs(path)
-        print(path + ' has been made')
+    images, answers, weights = load_dataset(full_path+'dataset', full_path+weights_name, args.total_images)
 
-    if not os.path.exists(path+'images/'):
-        os.makedirs(path+'images/')
-        print(path+'images/' + ' has been made')
-    
-    full_path = path+'images/'+f'{img_size[0]}-{img_size[1]}/'
-    if not os.path.exists(full_path):
-        os.makedirs(full_path)
-        print(full_path + ' has been made')
-    
-    weights_name ='weights-min'+str(args.minify)+'-r'+str(args.radius)
-    weights_path = full_path+weights_name
-    images, answers, weights = load_dataset(full_path, weights_path, args.total_images)
     start = len(images)
     start_weights = len(weights)
+
     print(f'loaded {start} existing images from dataset')
     print(f'loaded {start_weights} existing weights from {weights_name}')
 
@@ -141,7 +139,7 @@ def data(path, args, img_size=(32,32)):
             # L gives 8-bit pixels (0-255 range of white to black)
             out = Image.fromarray(np.uint8(answer * 255), 'L')
 
-            name = full_path+"img"+str(i)+".png"
+            name = full_path+'images/'+"img"+str(i)+".png"
             out.save(name, "PNG")
 
             images.append(name)
@@ -151,7 +149,7 @@ def data(path, args, img_size=(32,32)):
                 # squeeze(0) to remove batch dimension (but maintain channels or radius which could be 1)
 
     if start_weights != args.total_images or start_weights < start:
-            with open(weights_path, 'wb') as fp:
+            with open(full_path+weights_name, 'wb') as fp:
                 pickle.dump(weights, fp)
             print(f"made the {weights_name} file, {len(weights)-start_weights} new weights")
 
@@ -164,7 +162,7 @@ def data(path, args, img_size=(32,32)):
 
         # plot one example of the image, segmentation and weights
         print('create batch-num.pngs')
-        train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
+        train_dataset = SimpleDatasets(args, transform=transforms.ToTensor(), size=img_size)
 
         num = 5 # the last 'num' images of the new stuff
         b_start = max(args.total_images-num,0)
@@ -172,7 +170,7 @@ def data(path, args, img_size=(32,32)):
         batch = [torch.stack([train_dataset.get_image(i) for i in range(b_start,b_stop)]), 
                 torch.stack([train_dataset.get_segmentation(i) for i in range(b_start,b_stop)]), 
                 torch.stack([train_dataset.get_weights(i).squeeze(0) for i in range(b_start,b_stop)])]
-        plot_multiple_images(f'{b_start}-{b_stop}', batch, dir=path)
+        plot_multiple_images(f'{b_start}-{b_stop}', batch, dir=full_path)
 
 class SimpleDatasets(Dataset):
     """ Simple white background, black rectangle dataset """
@@ -186,13 +184,12 @@ class SimpleDatasets(Dataset):
         self.total_images = args.total_images
         self.transform = transform
 
-        path = 'data/' + args.dataset + '/' # location to store dataset
-        weights_path = path+'weights-min'+str(args.minify)+'-r'+str(args.radius)
+        full_path, weights_name = make_paths(size, args)
 
         # make the dataset (if needed)
-        data(path, args, img_size=size)
+        data(full_path, weights_name, args, img_size=size)
         # load the dataset
-        self.images, self.segmentations,self.weights = load_dataset(path, weights_path, self.total_images)
+        self.images, self.segmentations,self.weights = load_dataset(full_path+'dataset', full_path+weights_name, self.total_images)
             
     def __len__(self):
         return len(self.images)
@@ -231,7 +228,7 @@ if __name__ == '__main__':
     args.network = 1
     args.total_images = 1000
     args.minify = True
-    args.radius = 1
+    args.radius = 5
 
     # TODO: check loading minified weights and non-minified weights is equivalent
     
