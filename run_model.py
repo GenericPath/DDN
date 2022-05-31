@@ -46,7 +46,7 @@ if args.production:
 
 i=0
 for epoch in epochs:
-    for image_size in image_size:
+    for image_size in image_sizes:
         for batch_size in batch_sizes:
             for lr in lrs:
                 for total_images in total_imageses:
