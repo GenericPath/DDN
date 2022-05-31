@@ -185,7 +185,6 @@ class NormalizedCuts(AbstractDeclarativeNode):
         TODO: pass a parameter to avoid hardcoded output dimensions
         """
         A = A.detach() # TODO : verify if this breaks anything
-        out_size = 32
         # Implementation notes:
         # - requires einsum's to act on batch. Otherwise torch complains about tensors not being in graph being differentiated
         # - D_inv_sqrt calculates the inv sqrt of diagonal only to avoid division by zero
@@ -193,6 +192,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
         # obtain the batch and image size (sqrt of x/y to get out_size?)
         A = de_minW(A) # check if needs to be converted from minVer style
         b,c,x,y = A.shape
+        out_size = int(np.sqrt(x)) # NOTE: assumes it is square..
 
         # can also replace bc with ...
         d = torch.einsum('bcij->bcj', A) # eqv to A.sum(0) --- d vector
