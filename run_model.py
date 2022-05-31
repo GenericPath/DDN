@@ -36,7 +36,7 @@ if args.production:
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-    files_to_copy = ['run_model.py', script, 'model.py', 'model_loops.py', 'nc.py', 'data.py', 'node.py']
+    files_to_copy = ['run_model.py', script, 'model.py', 'model_loops.py', 'nc.py', 'data.py', 'node.py', 'net_argparser.py']
 
     for file in files_to_copy:
         shutil.copy2(file, folder)
