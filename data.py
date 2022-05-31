@@ -101,7 +101,7 @@ def load_dataset(full_path, weights_path, num_images):
     if os.path.isfile(weights_path):
         with open (weights_path, 'rb') as fp:
                 output = pickle.load(fp)
-                weights = output[:num_images] # images
+                weights = output[:num_images] # weights
     return inputs, outputs, weights
 
 def data(full_path, weights_name, args):

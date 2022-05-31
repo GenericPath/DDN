@@ -55,7 +55,7 @@ class WeightsNet(nn.Module):
                 x = x.view(x.size(0), 1, self.r, self.last_dim)
                 x = de_minW(x)
             elif self.net_no == 1: # Just trains for weights as output (minified)
-                x = x.view(x.size(0), self.r, self.last_dim)
+                x = x.view(x.size(0), 1, self.r, self.last_dim)
         else: 
             x = x.view(x.size(0), 1, self.last_dim, self.last_dim) # full matrix (with majority zeros)
         return x
