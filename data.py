@@ -112,8 +112,8 @@ def data(path, args, img_size=(32,32)):
         print(full_path + ' has been made')
     
     weights_name ='weights-min'+str(args.minify)+'-r'+str(args.radius)
-    weights_path = path+weights_name
-    images, answers, weights = load_dataset(path, weights_path, args.total_images)
+    weights_path = full_path+weights_name
+    images, answers, weights = load_dataset(full_path, weights_path, args.total_images)
     start = len(images)
     start_weights = len(weights)
     print(f'loaded {start} existing images from dataset')
@@ -158,7 +158,7 @@ def data(path, args, img_size=(32,32)):
     if start != args.total_images: # if there were new images to create, then save the new pickle
         # write the new contents to disk
         output = [images, answers]
-        with open(path+'dataset', 'wb') as fp:
+        with open(full_path+'dataset', 'wb') as fp:
             pickle.dump(output, fp)
         print(f"made the dataset file, {i - (start-1)} new images")
 
