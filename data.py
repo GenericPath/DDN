@@ -21,7 +21,7 @@ def get_dataset(args):
     Creates the train_loader, val_loader
     calls SimpleDatasets() which creates the data (if needed) using data()
     """
-    train_dataset = SimpleDatasets(args, transform=transforms.ToTensor(), size=(args.x, args.y))
+    train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
     print(f'Total dataset size {len(train_dataset)}')
 
     # Training and Validation dataset
@@ -74,7 +74,8 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
     plt.savefig(dir+'batch-'+str(batch_no)+'.png')
     plt.close()
 
-def make_paths(img_size, args):
+def make_paths(args):
+    img_size = (args.x, args.y)
     path = 'data/' + args.dataset + '/'
     full_path = path+f'{img_size[0]}-{img_size[1]}/'    
     if not os.path.exists(full_path+'images/'):
@@ -163,7 +164,7 @@ def data(full_path, weights_name, args):
 
         # plot one example of the image, segmentation and weights
         print('create batch-num.pngs')
-        train_dataset = SimpleDatasets(args, transform=transforms.ToTensor(), size=img_size)
+        train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
 
         num = 5 # the last 'num' images of the new stuff
         b_start = max(args.total_images-num,0)
@@ -176,16 +177,17 @@ def data(full_path, weights_name, args):
 class SimpleDatasets(Dataset):
     """ Simple white background, black rectangle dataset """
     
-    def __init__(self, args, transform=None, size=(32,32)):
+    def __init__(self, args, transform=None):
         """
         file (string): Path to the pickle that contains [img paths, output arrays]
         Creates the dataset if needed, and then loads it into class instance
         """
         self.network = args.network
         self.total_images = args.total_images
+        self.size = (args.x, args.y)
         self.transform = transform
 
-        full_path, weights_name = make_paths(size, args)
+        full_path, weights_name = make_paths(args)
 
         # make the dataset (if needed)
         data(full_path, weights_name, args)
