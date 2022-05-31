@@ -24,12 +24,11 @@ def test(val_loader, model, criterion, device, args):
             output = model(input_batch)
             val_loss = criterion(output, target_batch)
 
-            output = (output > 0.5).float()
-            b,c,x,y = target_batch.shape
-            batch_accuracy = (output.eq(target_batch).float().sum(dim=(-2,-1)) / (x*y)) * 100 # outputs: [b * 1] where 1 is the percentage accuracy
-            test_accuracy = output.eq(target_batch).float().mean()
+            test_output = (output > 0.5).float()
+            x,y = target_batch.shape[-2:]
+            batch_accuracy = (test_output.eq(target_batch).float().sum(dim=(-2,-1)) / (x*y)) * 100 # outputs: [b * 1] where 1 is the percentage accuracy
             
-            avg_acc += test_accuracy
+            avg_acc += accuracy(output, target_batch)
             avg_loss += val_loss.item()
 
             plot_multiple_images(i, [input_batch, output], dir=dir, labels=batch_accuracy, figsize=[x,y])
@@ -55,8 +54,7 @@ def validate(val_loader, model, device, criterion, scheduler):
             val_loss += criterion(output, target_batch)
             scheduler.step(val_loss) # Reduce LR on plateu
 
-            output = (output > 0.5).float()         
-            val_accuracy += output.eq(target_batch).float().mean()
+            val_accuracy += accuracy(output, target_batch)
             
         val_accuracy /= len(val_loader)
         val_loss /= len(val_loader)
@@ -75,8 +73,7 @@ def train(train_loader, model, device, criterion, optimizer):
             loss.backward()
         optimizer.step()
 
-        test_output = (output > 0.5).float()
-        train_accuracy += output.eq(test_output).float().mean()
+        train_accuracy += accuracy(output, target_batch)
         train_loss += loss.item()
 
     train_accuracy /= len(train_loader)
@@ -84,8 +81,17 @@ def train(train_loader, model, device, criterion, optimizer):
     return train_accuracy, train_loss
 
 def accuracy(output, target):
+    """
+    converts to > 0.5 or not binary, then calculates accuracy for all pixels
+    """
+    if output.shape[-2:] != target.shape[-2:]:
+        raise Exception(f'Cannot calculate accuracy for mismatched shapes - {output.shape[-2:]} vs {target.shape[-2:]}')
+    x,y = output.shape[-2:]
     output = (output > 0.5).float()
-    return output.eq(target).float().mean()
+    # Counts how many times they are equal, then divide by total number of possibilities
+    per_accuracy = (output.eq(target).float().sum(dim=(-2,-1)) / (x*y))
+    avg_accuracy = per_accuracy.mean()
+    return avg_accuracy
 
 if __name__ == '__main__':
     import torch.nn as nn
@@ -103,6 +109,7 @@ if __name__ == '__main__':
     args.batch_size = 1
     args.minify = True
     args.dataset = 'simple01'
+    args.x, args.y = (8,8)
 
     args.network = 0
      # load everything
@@ -113,10 +120,17 @@ if __name__ == '__main__':
     
     criterion = nn.BCEWithLogitsLoss()
 
+    # create an 8,8 dataset 
     train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
     sample=[train_dataset.get_image(0)[None,:], train_dataset.get_segmentation(0), train_dataset.get_weights(0)]
     # add batch dimension to input image with [None,:]
 
+    sample.append(model(sample[0])) # add the model output (which should be pretty wrong)
+    sample.append((sample[3] > 0.5).float())
+
+    # input, segment, weights, model output (noisy)
+
+    plot_multiple_images('model_loops_test', images=sample, labels=[accuracy(sample[3].squeeze(0), sample[1])])
     print(f'accuracy input input {accuracy(sample[0], sample[0])}')
     print(f'accuracy seg seg {accuracy(sample[1], sample[1])}')
     print(f'accuracy net0(input) seg {accuracy(model(sample[0]), sample[1])}')
