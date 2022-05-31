@@ -73,9 +73,11 @@ class PostNC(nn.Module):
     def __init__(self, args):
         super(PostNC, self).__init__()
         self.args = args
+        self.img_size = args.img_size
         self.block1 = self.conv_block(c_in=1, c_out=4, kernel_size=3, stride=1, padding=1)
         self.block2 = self.conv_block(c_in=4, c_out=8, kernel_size=3, stride=1, padding=1)
         self.lastcnn = nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, stride=1, padding=1)
+
     def forward(self, x):
         x = x.view(x.size(0), 1, self.self.img_size[0], self.self.img_size[1])
         x = self.block1(x)
@@ -83,6 +85,7 @@ class PostNC(nn.Module):
         x = self.lastcnn(x)
         # x = torch.sigmoid(x) # NOTE: this is replaced with using the correct loss function (BCEWithLogitsLoss as it is more stable!)
         return x
+
     def conv_block(self, c_in, c_out, **kwargs):
         seq_block = nn.Sequential(
             nn.Conv2d(in_channels=c_in, out_channels=c_out, **kwargs),
