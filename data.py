@@ -106,6 +106,11 @@ def data(path, args, img_size=(32,32)):
         os.makedirs(path+'images/')
         print(path+'images/' + ' has been made')
     
+    full_path = path+'images/'+f'{img_size[0]}-{img_size[1]}/'
+    if not os.path.exists(full_path):
+        os.makedirs(full_path)
+        print(full_path + ' has been made')
+    
     weights_name ='weights-min'+str(args.minify)+'-r'+str(args.radius)
     weights_path = path+weights_name
     images, answers, weights = load_dataset(path, weights_path, args.total_images)
@@ -136,7 +141,7 @@ def data(path, args, img_size=(32,32)):
             # L gives 8-bit pixels (0-255 range of white to black)
             out = Image.fromarray(np.uint8(answer * 255), 'L')
 
-            name = path+'images/'+"img"+str(i)+".png"
+            name = full_path+"img"+str(i)+".png"
             out.save(name, "PNG")
 
             images.append(name)
@@ -172,7 +177,7 @@ def data(path, args, img_size=(32,32)):
 class SimpleDatasets(Dataset):
     """ Simple white background, black rectangle dataset """
     
-    def __init__(self, args, transform=None):
+    def __init__(self, args, transform=None, size=(32,32)):
         """
         file (string): Path to the pickle that contains [img paths, output arrays]
         Creates the dataset if needed, and then loads it into class instance
@@ -185,7 +190,7 @@ class SimpleDatasets(Dataset):
         weights_path = path+'weights-min'+str(args.minify)+'-r'+str(args.radius)
 
         # make the dataset (if needed)
-        data(path, args)
+        data(path, args, img_size=size)
         # load the dataset
         self.images, self.segmentations,self.weights = load_dataset(path, weights_path, self.total_images)
             
@@ -226,7 +231,7 @@ if __name__ == '__main__':
     args.network = 1
     args.total_images = 1000
     args.minify = True
-    args.radius = 5
+    args.radius = 1
 
     # TODO: check loading minified weights and non-minified weights is equivalent
     
