@@ -1,5 +1,15 @@
 import argparse
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 def net_argparser():
     """
     Uses argparse to parse all commandline arguments, used in main.py but also to test other parts separately.
@@ -34,7 +44,7 @@ def net_argparser():
     parser.add_argument('--network', default=0, type=int, help='network to use: 0=Net (Weights->NC->Post), 1=WeightsNet (Weights)')
 
     # newest
-    parser.add_argument('--minify', default=True, type=bool, help='minify the weights mode (for the PreNC portion)')
+    parser.add_argument('--minify', type=str2bool, nargs='?', const=True, default=False, help='minify the weights mode (for the PreNC portion)')
     parser.add_argument('--radius', '-r', default=5, type=int, help='radius value for expected weights (only relevant for minified version)')
 
     parser.add_argument('--img-size', '-size', nargs=2, metavar=('x','y'), type=int, default=(32,32), help='img sizes to work with')
