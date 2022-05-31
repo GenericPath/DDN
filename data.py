@@ -21,7 +21,7 @@ def get_dataset(args):
     Creates the train_loader, val_loader
     calls SimpleDatasets() which creates the data (if needed) using data()
     """
-    train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
+    train_dataset = SimpleDatasets(args, transform=transforms.ToTensor(), size=(args.x, args.y))
     print(f'Total dataset size {len(train_dataset)}')
 
     # Training and Validation dataset
@@ -103,12 +103,13 @@ def load_dataset(full_path, weights_path, num_images):
                 weights = output[:num_images] # images
     return inputs, outputs, weights
 
-def data(full_path, weights_name, args, img_size=(32,32)):
+def data(full_path, weights_name, args):
     """ Generate a simple dataset (if it doesn't already exist) 
     path - example 'data/simple01/'
     total_images - total number of images to create for the dataset
     image size - (w,h)
     """
+    img_size = (args.x,args.y)
     images, answers, weights = load_dataset(full_path+'dataset', full_path+weights_name, args.total_images)
 
     start = len(images)
@@ -187,7 +188,7 @@ class SimpleDatasets(Dataset):
         full_path, weights_name = make_paths(size, args)
 
         # make the dataset (if needed)
-        data(full_path, weights_name, args, img_size=size)
+        data(full_path, weights_name, args)
         # load the dataset
         self.images, self.segmentations,self.weights = load_dataset(full_path+'dataset', full_path+weights_name, self.total_images)
             
@@ -229,6 +230,7 @@ if __name__ == '__main__':
     args.total_images = 1000
     args.minify = True
     args.radius = 5
+    args.x, args.y = (32,32) # the default is 32,32 anyway
 
     # TODO: check loading minified weights and non-minified weights is equivalent
     

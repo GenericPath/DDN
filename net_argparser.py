@@ -37,6 +37,8 @@ def net_argparser():
     parser.add_argument('--minify', default=True, type=bool, help='minify the weights mode (for the PreNC portion)')
     parser.add_argument('--radius', '-r', default=5, type=int, help='radius value for expected weights (only relevant for minified version)')
 
+    parser.add_argument('--img-size', '-size', nargs=2, metavar=('x','y'), type=int, default=(32,32), help='img sizes to work with')
+
     # TODO : add option to switch between eqconst
     parser.add_argument('--eqconst', default=True, type=bool, help='equality constrained or non equality constrained')
 
