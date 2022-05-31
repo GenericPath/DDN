@@ -14,7 +14,7 @@ class Net(nn.Module):
         self.weightsNet = WeightsNet(args)
         self.nc = NormalizedCuts(eps=1) # eps sets the absolute difference between objective solutions and 0
         self.decl = DeclarativeLayer(self.nc) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
-        self.postNC = PostNC()
+        self.postNC = PostNC(args)
 
     def forward(self, x):
         x = self.weightsNet(x) # make the affinity matrix (or something else that works with)
@@ -32,6 +32,9 @@ class WeightsNet(nn.Module):
         self.r = args.radius
         self.min = args.minify
         self.net_no = args.network
+        self.size = (args.x, args.y)
+        self.last_dim = args.x * args.y
+
         # CNN layers
         self.block1 = self.conv_block(c_in=args.net_size[0], c_out=args.net_size[1], kernel_size=3, stride=1, padding=1)
         self.block2 = self.conv_block(c_in=args.net_size[1], c_out=args.net_size[2], kernel_size=3, stride=1, padding=1)
@@ -49,14 +52,14 @@ class WeightsNet(nn.Module):
         # combine the 32x32 image filters into the correct output size (full matrix or not...)
         if self.min: 
             if self.net_no == 0: # Passes into NC node
-                x = x.view(x.size(0), 1, self.r, 1024)
+                x = x.view(x.size(0), 1, self.r, self.last_dim)
                 x = de_minW(x)
             elif self.net_no == 1: # Just trains for weights as output (minified)
-                x = x.view(x.size(0), self.r, 1024)
+                x = x.view(x.size(0), self.r, self.last_dim)
         else: 
-            x = x.view(x.size(0), 1, 1024, 1024) # full matrix (with majority zeros)
-
+            x = x.view(x.size(0), 1, self.last_dim, self.last_dim) # full matrix (with majority zeros)
         return x
+
     def conv_block(self, c_in, c_out, **kwargs):
         seq_block = nn.Sequential(
             nn.Conv2d(in_channels=c_in, out_channels=c_out, **kwargs),
@@ -67,13 +70,14 @@ class WeightsNet(nn.Module):
 
 
 class PostNC(nn.Module):
-    def __init__(self):
+    def __init__(self, args):
         super(PostNC, self).__init__()
+        self.args = args
         self.block1 = self.conv_block(c_in=1, c_out=4, kernel_size=3, stride=1, padding=1)
         self.block2 = self.conv_block(c_in=4, c_out=8, kernel_size=3, stride=1, padding=1)
         self.lastcnn = nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, stride=1, padding=1)
     def forward(self, x):
-        x = x.view(x.size(0), 1, 32, 32)
+        x = x.view(x.size(0), 1, self.args.x, self.args.y)
         x = self.block1(x)
         x = self.block2(x)
         x = self.lastcnn(x)
