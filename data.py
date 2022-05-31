@@ -74,17 +74,23 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
     plt.savefig(dir+'batch-'+str(batch_no)+'.png')
     plt.close()
 
-def load_dataset(path, number):
+def load_dataset(path, weights_path, num_images):
     """
     opens the path/dataset file and returns
     (inputs (images), outputs (segmentations), intermediate (weights))
     """
-    with open (path+'dataset', 'rb') as fp:
-        output = pickle.load(fp)
-        inputs = output[0][:number] # images
-        outputs = output[1][:number] # segmentations
-        intermediate = output[2][:number] # weights
-    return inputs, outputs, intermediate
+    inputs,outputs,weights = [],[],[]
+    if os.path.isfile(path+'dataset'):
+        with open (path+'dataset', 'rb') as fp:
+            output = pickle.load(fp)
+            inputs = output[0][:num_images] # images
+            outputs = output[1][:num_images] # segmentations
+    
+    if os.path.isfile(weights_path):
+        with open (weights_path, 'rb') as fp:
+                output = pickle.load(fp)
+                weights = output[:num_images] # images
+    return inputs, outputs, weights
 
 def data(path, args, img_size=(32,32)):
     """ Generate a simple dataset (if it doesn't already exist) 
@@ -95,42 +101,58 @@ def data(path, args, img_size=(32,32)):
     if not os.path.exists(path):
         os.makedirs(path)
         print(path + ' has been made')
-        
-    images, answers, weights = [],[],[]
-    start = 0
-    if os.path.isfile(path+'dataset'):
-        # already been made once, will append images to increase count
-        images, answers, weights = load_dataset(path, args.total_images)
-        start = len(images)
-    print(f'loaded {start} existing images')
 
-    for i in tqdm(range(start, args.total_images)):
-        # TODO: When creating dataset, enforce constraint of 50% white, 50% black to ensure nothing funny is happening
+    if not os.path.exists(path+'images/'):
+        os.makedirs(path+'images/')
+        print(path+'images/' + ' has been made')
+    
+    weights_name ='weights-min'+str(args.minify)+'-r'+str(args.radius)
+    weights_path = path+weights_name
+    images, answers, weights = load_dataset(path, weights_path, args.total_images)
+    start = len(images)
+    start_weights = len(weights)
+    print(f'loaded {start} existing images from dataset')
+    print(f'loaded {start_weights} existing weights from {weights_name}')
 
-        # L gives 8-bit pixels (0-255 range of white to black)
-        w,h = (random.randint(img_size[0]//3, img_size[0]), random.randint(img_size[0]//3, img_size[0]))
-        x,y = (random.randint(img_size[0]//3, img_size[0]), random.randint(img_size[0]//3, img_size[0]))
+    # create all the missing weights (as the images may have been created with a different minify or radius)
+    if start_weights < start:
+        for i_w in tqdm(range(start_weights, start), desc='new weights'):
+            name = images[i_w]
+            weights.append(manual_weight(name, r=args.radius, minVer=args.minify).squeeze(0))           
 
-        xy = [(x-w//2,y-h//2), (x+w//2,y+h//2)]
-        answer = np.zeros(img_size)
-        answer[xy[0][0]:xy[1][0], xy[0][1]:xy[1][1]] = 1
+    # create all the (new) images to reach total images count (appends new ones)
+    if start < args.total_images:
+        for i in tqdm(range(start, args.total_images), desc='new images, segs, weights'):
+            # TODO: When creating dataset, enforce constraint of 50% white, 50% black to ensure nothing funny is happening
 
-        # L gives 8-bit pixels (0-255 range of white to black)
-        out = Image.fromarray(np.uint8(answer * 255), 'L')
+            # L gives 8-bit pixels (0-255 range of white to black)
+            w,h = (random.randint(img_size[0]//3, img_size[0]), random.randint(img_size[0]//3, img_size[0]))
+            x,y = (random.randint(img_size[0]//3, img_size[0]), random.randint(img_size[0]//3, img_size[0]))
 
-        name = path+"img"+str(i)+".png"
-        out.save(name, "PNG")
-        images.append(name)
-        
-        # TODO: STORE RADIUS AND WEIGHTS IN A SEPARATE PICKLE
-        # FOR NOW ONLY USE ONE VALUE
-        weights.append(manual_weight(name, r=args.radius, minVer=args.minify).squeeze(0)) 
-        # squeeze(0) to remove batch dimension (but maintain channels or radius which could be 1)
-        answers.append(answer) 
+            xy = [(x-w//2,y-h//2), (x+w//2,y+h//2)]
+            answer = np.zeros(img_size)
+            answer[xy[0][0]:xy[1][0], xy[0][1]:xy[1][1]] = 1
+
+            # L gives 8-bit pixels (0-255 range of white to black)
+            out = Image.fromarray(np.uint8(answer * 255), 'L')
+
+            name = path+'images/'+"img"+str(i)+".png"
+            out.save(name, "PNG")
+
+            images.append(name)
+            answers.append(answer) 
+            if i >= start_weights:
+                weights.append(manual_weight(name, r=args.radius, minVer=args.minify).squeeze(0)) 
+                # squeeze(0) to remove batch dimension (but maintain channels or radius which could be 1)
+
+    if start_weights != args.total_images or start_weights < start:
+            with open(weights_path, 'wb') as fp:
+                pickle.dump(weights, fp)
+            print(f"made the {weights_name} file, {len(weights)-start_weights} new weights")
 
     if start != args.total_images: # if there were new images to create, then save the new pickle
         # write the new contents to disk
-        output = [images, answers, weights]
+        output = [images, answers]
         with open(path+'dataset', 'wb') as fp:
             pickle.dump(output, fp)
         print(f"made the dataset file, {i - (start-1)} new images")
@@ -138,9 +160,14 @@ def data(path, args, img_size=(32,32)):
         # plot one example of the image, segmentation and weights
         print('create batch-num.pngs')
         train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
-        for i in range(max(args.total_images-5,0),args.total_images):
-            row = [train_dataset.get_image(i), train_dataset.get_segmentation(i), train_dataset.get_weights(i)]
-            plot_multiple_images(i, row, dir=path)
+
+        num = 5 # the last 'num' images of the new stuff
+        b_start = max(args.total_images-num,0)
+        b_stop = args.total_images
+        batch = [torch.stack([train_dataset.get_image(i) for i in range(b_start,b_stop)]), 
+                torch.stack([train_dataset.get_segmentation(i) for i in range(b_start,b_stop)]), 
+                torch.stack([train_dataset.get_weights(i).squeeze(0) for i in range(b_start,b_stop)])]
+        plot_multiple_images(f'{b_start}-{b_stop}', batch, dir=path)
 
 class SimpleDatasets(Dataset):
     """ Simple white background, black rectangle dataset """
@@ -148,16 +175,19 @@ class SimpleDatasets(Dataset):
     def __init__(self, args, transform=None):
         """
         file (string): Path to the pickle that contains [img paths, output arrays]
+        Creates the dataset if needed, and then loads it into class instance
         """
         self.network = args.network
         self.total_images = args.total_images
-        path = 'data/' + args.dataset + '/' # location to store dataset
-
-        data(path, args) # make the dataset
-        self.images, self.segmentations, self.weights = load_dataset(path, self.total_images)
-        
         self.transform = transform
-        print(f'loaded {path}dataset')
+
+        path = 'data/' + args.dataset + '/' # location to store dataset
+        weights_path = path+'weights-min'+str(args.minify)+'-r'+str(args.radius)
+
+        # make the dataset (if needed)
+        data(path, args)
+        # load the dataset
+        self.images, self.segmentations,self.weights = load_dataset(path, weights_path, self.total_images)
             
     def __len__(self):
         return len(self.images)
@@ -194,6 +224,11 @@ if __name__ == '__main__':
 
     args = net_argparser()
     args.network = 1
+    args.total_images = 1000
+    args.minify = True
+    args.radius = 5
+
+    # TODO: check loading minified weights and non-minified weights is equivalent
     
     train_loader, val_loader = get_dataset(args)
 
