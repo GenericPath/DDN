@@ -79,7 +79,7 @@ class PostNC(nn.Module):
         self.lastcnn = nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, stride=1, padding=1)
 
     def forward(self, x):
-        x = x.view(x.size(0), 1, self.self.img_size[0], self.self.img_size[1])
+        x = x.view(x.size(0), 1, self.img_size[0], self.img_size[1])
         x = self.block1(x)
         x = self.block2(x)
         x = self.lastcnn(x)
