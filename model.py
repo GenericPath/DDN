@@ -44,7 +44,7 @@ class WeightsNet(nn.Module):
 
         # TODO : remove specification of the last net_size value and infer automatically..
         # TODO : make it so you can specify any number of nets and it will create that many blocks (deeper is better after all...)
-        self.restrict = nn.Sigmoid() # was previously a ReLU
+        self.restrict = nn.ReLU() # was ReLU then sigmoid, then ReLU then to be tested is nothing
 
     def forward(self, x):
         x = self.block1(x)
