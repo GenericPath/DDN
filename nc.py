@@ -226,6 +226,11 @@ class NormalizedCuts(AbstractDeclarativeNode):
         return fY
 
 if __name__ == "__main__":
+    gpu = 1
+
+    device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device {device}')
+
     # Misc checks...
     print("\nCheck minified converts to correct full form")
     A = torch.randn(3,1,1,3)
@@ -243,7 +248,7 @@ if __name__ == "__main__":
 
     # 1. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
     print("\nstandard tests")
-    A = torch.randn(32,1,1024,1024, requires_grad=True) # real 32x32 image input
+    A = torch.randn(32,1,1024,1024, requires_grad=True, device=device) # real 32x32 image input
 
     A = torch.nn.functional.relu(A) # enforce positive constraint
     A_t = torch.einsum('bcij->bcji', A) # transpose of batched matrix
@@ -265,7 +270,7 @@ if __name__ == "__main__":
     print('\nminVer tests')
     # 3. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
     #    for the minVer style
-    A = torch.randn(32,1,2,1024, requires_grad=True)
+    A = torch.randn(32,1,2,1024, requires_grad=True, device=device)
     A = torch.nn.functional.relu(A) # enforce positive constraint
 
     node = NormalizedCuts()
