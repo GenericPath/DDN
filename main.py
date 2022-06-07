@@ -25,7 +25,9 @@ def main():
     if args.seed is not None:
         random.seed(args.seed)
         torch.manual_seed(args.seed)
+
     cudnn.benchmark = True # Cuda optimisations when using a fixed input size
+
     device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
     # device = 'cpu' # hardcode to use cpu when neccessary
     print(f'Using device {device}')
