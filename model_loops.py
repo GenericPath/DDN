@@ -102,10 +102,10 @@ if __name__ == '__main__':
     from data import get_dataset, SimpleDatasets
     from model import Net, WeightsNet
 
-    # 1. Verify accuracy works on known samples (and pertubations), plus does the model sizes match expected
+    # 1. Verify accuracy works on known samples (TODO: and pertubations), plus does the model sizes match expected
     args = net_argparser()
 
-    # hardcode some values :)
+    # hardcode some values for testing :)
     args.batch_size = 1
     args.minify = True
     args.dataset = 'simple01'
@@ -142,6 +142,9 @@ if __name__ == '__main__':
     # see if it all functions
 
     # TODO: test if the way it is used in main via train/validate makes any sense
+
+    # NOTE: FOR ME TOMORROW, CLONE_DDN MADE TO ADD SCIKIT-LEARN OR W/E FOR ACCCURACY METRIC. WILL PROBABLY IMRPOVE MY LIFE
+    # TODO: CONVERT DATASET TO 50% WHITE 50% BLACK, I THINK THIS WILL GENUINELY HELP, BUT MOSTLY ABOVE IS BETTER!
 
     # for input_batch, target_batch in tqdm(train_loader, ascii=True):
     #     output = model(input_batch)
