@@ -41,6 +41,9 @@ class WeightsNet(nn.Module):
         self.block3 = self.conv_block(c_in=args.net_size[2], c_out=args.net_size[3], kernel_size=3, stride=1, padding=1)
         self.lastcnn = nn.Conv2d(in_channels=args.net_size[3], out_channels=args.net_size[4], kernel_size=3, stride=1, padding=1)
         # NOTE: net_size[4] is automatically changed to self.r in run_model if needed, but otherwise it is automatically changed
+
+        # TODO : remove specification of the last net_size value and infer automatically..
+        # TODO : make it so you can specify any number of nets and it will create that many blocks (deeper is better after all...)
         self.restrict = nn.Sigmoid() # was previously a ReLU
 
     def forward(self, x):
