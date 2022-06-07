@@ -44,13 +44,14 @@ class WeightsNet(nn.Module):
 
         # TODO : remove specification of the last net_size value and infer automatically..
         # TODO : make it so you can specify any number of nets and it will create that many blocks (deeper is better after all...)
-        self.restrict = nn.ReLU() # was ReLU then sigmoid, then ReLU then to be tested is nothing
+        # self.restrict = nn.ReLU() # was ReLU then sigmoid, then ReLU then to be tested is nothing
 
     def forward(self, x):
         x = self.block1(x)
         x = self.block2(x)
         x = self.block3(x)
-        x = self.restrict(self.lastcnn(x))
+        # x = self.restrict(self.lastcnn(x))
+        x = self.lastcnn(x)
 
         # combine the 32x32 image filters into the correct output size (full matrix or not...)
         if self.min: 

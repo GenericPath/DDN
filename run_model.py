@@ -64,7 +64,7 @@ for epoch in epochs:
                                         i += 1
                                         # TODO : add dataset size to this (and any other relevant ones...)
                                         # maybe automatically add all the things that have multiple options?
-                                        run_name = 'run' + str(i) + '-net' + str(network) + '-ti' + str(total_images) + 'ReLU'
+                                        run_name = 'run' + str(i) + '-net' + str(network) + '-ti' + str(total_images) + 'None'
                                         run_name += '-r' + str(radius) + '-min' + str(minify) 
                                         run_name += '-lr' + str(lr)
                                         command = ["python", script, 
