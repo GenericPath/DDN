@@ -14,7 +14,7 @@ lrs = [1e-6,1e-4,1e-2]
 momentums = [0.9]
 vals = [0.1]
 seeds = [0]
-total_imageses = [5000]
+total_imageses = [100]
 net_sizes = [[1,4,8,4,-1]] # the -1 is replaced by radius value
 image_sizes = [[16,16]]
 
