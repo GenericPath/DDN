@@ -226,12 +226,34 @@ class NormalizedCuts(AbstractDeclarativeNode):
         return fY
 
 if __name__ == "__main__":
-    gpu = 1
+    from torchvision import transforms
+    from net_argparser import net_argparser
+    from data import get_dataset, SimpleDatasets, plot_multiple_images
 
-    device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else 'cpu')
+    # 0.1 - quick checks that the node does the correct outputs
+    args = net_argparser()
+    device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
     print(f'Using device {device}')
 
-    # Misc checks...
+    print(f'r:\t{args.radius}\nmin:\t{args.minify}\nsize:\t{args.img_size}')
+
+    train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
+    input, output, weight = train_dataset.get_image(0)[None,:], train_dataset.get_segmentation(0), train_dataset.get_weights(0)
+    sample=[input, output, de_minW(weight)]
+    W_1 = manual_weight(input, args.radius, False)
+    W_2 = manual_weight(input, args.radius, True)
+    W_3 = de_minW(W_2)
+    print(f'conversion to/from consistent (dataset input): {str(torch.allclose(W_1, W_3))}')
+    if args.minify:
+        print(f'creation/loading consistent (minified): {str(torch.allclose(weight, W_2))}')
+    print(f'creation/loading consistent (full): {str(torch.allclose(de_minW(weight), W_1))}')
+
+    node = NormalizedCuts()
+    y,misc = node.solve(weight)
+    sample.append(y)
+    plot_multiple_images('test cut', sample, dir='experiments/nc/')
+
+    # 0.2 - Misc checks...
     print("\nCheck minified converts to correct full form")
     A = torch.randn(3,1,1,3)
     print(A[0][0])
