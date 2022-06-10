@@ -1,7 +1,16 @@
-from subprocess import Popen
-import os, time, argparse, shutil
-from itertools import product # for automatically creating all the combinations
+from subprocess import Popen # to create the python process(es)
+import os, time, argparse, shutil # setup of args, folders and files
+from itertools import product, chain # for automatically creating all the combinations
 import pprint  # for printing/writing a dict nicely
+from typing import Iterable # for flattening
+
+def str_flatten(items):
+    """Yield string items from any nested iterable; see https://stackoverflow.com/a/40857703"""
+    for x in items:
+        if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+            yield from str_flatten(x) # python3 only
+        else:
+            yield str(x) # or could return the items as original type without str()
 
 parser = argparse.ArgumentParser(description='Runs a series of models with set configurations')
 parser.add_argument('--production', action='store_true',
@@ -9,16 +18,17 @@ parser.add_argument('--production', action='store_true',
 
 args, unknown = parser.parse_known_args() # unknown args are discarded, useful if running with debugger..
 
-# TODO: add test as an option here?
-test = '' # Switch to --test when testing
-
+test = '' # TODO: switch to --test when testing
+# Defaults (non-production)
 script = 'main.py'
-folder = ""
 out_file = 'runs.txt'
+
+custom = "" # NOTE: used to create a unique folder name in production mode
 
 if args.production:
     # Store the run (and scripts etc) in a month/day/ folder
-    folder = 'experiments/' + time.strftime("%m_%d_%H_%M/")
+    folder = 'experiments/' + time.strftime("%m_%d_%H_%M/") + custom
+
     out_file = folder + out_file
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -46,33 +56,34 @@ commands = {
     "-s" : [0],
     "--net-size-weights" : [[1,4,8,4]],
     "--net-size-post" : [[1,4,8,4]],
-} # append a -n to each permutation
+}
 
 # [dict(zip(d, v)) for v in product(*d.values())]
 # from https://stackoverflow.com/a/15211805
 runs = [dict(zip(commands, v)) for v in product(*commands.values())]
-print(f'{len(runs)} runs')
 changing_keys = [key for key, values in commands.items() if len(values) > 1]
-print(f'{len(changing_keys)} changing variables')
-
+print(f'{len(runs)} runs')
+print(f'{len(changing_keys)} variables')
 
 # TODO : add profiling (torch.profiler) from pip install pytorch_tb_profiler or w/e
 
-i=0
-for run in runs:
+# Run each experiment (not in parallel)
+for i, run in enumerate(runs):
     run_name = 'run' + str(i)
     for changing_key in changing_keys: # add all the changing variables to the run name
-        run_name += f'{changing_key}-{str(run[changing_key])}-'
-    # run_name += 'custom'
+        run_name += f'{changing_key}-{str(run[changing_key])}'
+    run_name += 'custom'
     run['-n'] = run_name
 
-    # TODO: convert to list
-    # TODO: add 'python', script to the start of the list
+    command = list(sum(run.items(), ()))
+    flat = list(str_flatten(command))
+    flat.insert(0, script)
+    flat.insert(0, 'python')
 
     pprint.pprint(run)
     f = open(out_file, "a")
     f.write(run_name + '\n')
     f.write(pprint.pformat(run))
     f.close()
-    p = Popen(run)
+    p = Popen(flat)
     (output, err) = p.communicate()
