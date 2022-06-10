@@ -32,41 +32,38 @@ class WeightsNet(nn.Module):
         self.r = args.radius
         self.min = args.minify
         self.net_no = args.network
-        self.img_size = args.img_size
-        self.last_dim = self.img_size[0] * self.img_size[1]
+        self.last_dim = args.img_size[0] * args.img_size[1]
 
-        if args.minify: # replace the output size of weights network to radius, if minified
-            args.net_size[-1] = args.radius 
-        else: # otherwise its x*y
-            args.net_size[-1] = args.image_size[0]*args.image_size[1]
+        # TODO: add a channels field for forward(...), but currently only training B/W images
+        # TODO: add args for these (not worried until everything works flawlessly)
+        self.kernel_size = 3
+        self.stride = 1
+        self.padding = 1
 
-        # CNN layers
-        self.block1 = self.conv_block(c_in=args.net_size[0], c_out=args.net_size[1], kernel_size=3, stride=1, padding=1)
-        self.block2 = self.conv_block(c_in=args.net_size[1], c_out=args.net_size[2], kernel_size=3, stride=1, padding=1)
-        self.block3 = self.conv_block(c_in=args.net_size[2], c_out=args.net_size[3], kernel_size=3, stride=1, padding=1)
-        self.lastcnn = nn.Conv2d(in_channels=args.net_size[3], out_channels=args.net_size[4], kernel_size=3, stride=1, padding=1)
-        # NOTE: net_size[4] is automatically changed to self.r in run_model if needed, but otherwise it is automatically changed
+        self.last_size = self.last_dim # either its last_dim * last_dim
+        if args.minify:
+            args.last_size = args.radius # or if minified its just radius x dim
 
-        # TODO : remove specification of the last net_size value and infer automatically..
-        # TODO : make it so you can specify any number of nets and it will create that many blocks (deeper is better after all...)
-        # self.restrict = nn.ReLU() # was ReLU then sigmoid, then ReLU then to be tested is nothing
+        self.layers = nn.ModuleList()
+
+        for k in range(len(args.net_size_weights)-1): # there is probably some better looking loop, but it works
+            self.layers.append(self.conv_block(c_in=args.net_size_weights[k], c_out=args.net_size_weights[k+1], 
+                                kernel_size=self.kernel_size, stride=self.stride, padding=self.padding))
+        self.lastcnn = nn.Conv2d(in_channels=args.net_size_weights[-1], out_channels=self.last_size, kernel_size=3, stride=1, padding=1)
+        self.restrict = nn.ReLU()
 
     def forward(self, x):
-        x = self.block1(x)
-        x = self.block2(x)
-        x = self.block3(x)
-        # x = self.restrict(self.lastcnn(x))
+        for layer in self.layers:
+            x = layer(x)
         x = self.lastcnn(x)
+        x = self.restrict(x)
 
-        # combine the 32x32 image filters into the correct output size (full matrix or not...)
-        if self.min: 
-            if self.net_no == 0: # Passes into NC node
-                x = x.view(x.size(0), 1, self.r, self.last_dim)
-                x = de_minW(x)
-            elif self.net_no == 1: # Just trains for weights as output (minified)
-                x = x.view(x.size(0), 1, self.r, self.last_dim)
-        else: 
-            x = x.view(x.size(0), 1, self.last_dim, self.last_dim) # full matrix (with majority zeros)
+        # combine the 32x32 * last_size into the correct output size (full matrix or not...)
+        if self.net_no == 0: # Passes into NC node by converting to full
+            x = x.view(x.size(0), 1, self.last_size, self.last_dim)
+            x = de_minW(x)
+        elif self.net_no == 1: # Just trains for weights as output (as is full/minified)
+            x = x.view(x.size(0), 1, self.last_size, self.last_dim)
         return x
 
     def conv_block(self, c_in, c_out, **kwargs):
@@ -83,14 +80,26 @@ class PostNC(nn.Module):
         super(PostNC, self).__init__()
         self.args = args
         self.img_size = args.img_size
-        self.block1 = self.conv_block(c_in=1, c_out=4, kernel_size=3, stride=1, padding=1)
-        self.block2 = self.conv_block(c_in=4, c_out=8, kernel_size=3, stride=1, padding=1)
-        self.lastcnn = nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, stride=1, padding=1)
+
+        # TODO: add a channels field for forward(...), but currently only training B/W images
+        # TODO: add args for these (not worried until everything works flawlessly)
+        self.kernel_size = 3
+        self.stride = 1
+        self.padding = 1
+
+
+        self.layers = nn.ModuleList()
+        for k in range(len(args.net_size_post)-1):
+            self.layers.append(self.conv_block(c_in=args.net_size_post[k], c_out=args.net_size_post[k+1], 
+                                kernel_size=self.kernel_size, stride=self.stride, padding=self.padding))
+
+        # out channles of 1 for original input size (assuming consistent kernels, stride and padding values)
+        self.lastcnn = nn.Conv2d(in_channels=args.net_size_post[-1], out_channels=1, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
 
     def forward(self, x):
-        x = x.view(x.size(0), 1, self.img_size[0], self.img_size[1])
-        x = self.block1(x)
-        x = self.block2(x)
+        x = x.view(x.size(0), 1, self.img_size[0], self.img_size[1]) # convert from NC node into this
+        for layer in self.layers:
+            x = layer(x)
         x = self.lastcnn(x)
         # x = torch.sigmoid(x) # NOTE: this is replaced with using the correct loss function (BCEWithLogitsLoss as it is more stable!)
         return x
