@@ -84,9 +84,9 @@ for epoch in epochs:
                                                                 "--radius", str(radius),
                                                                 "--minify", str(minify),
                                                                 "--img-size", str(image_size[0]), str(image_size[1]),
-                                                                "-m", momentum,
-                                                                "-v", val,
-                                                                "-s", seed,
+                                                                "-m", str(momentum),
+                                                                "-v", str(val),
+                                                                "-s", str(seed)
                                                                 ] 
                                                     print(command)
                                                     f = open(out_file, "a")
