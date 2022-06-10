@@ -222,7 +222,7 @@ class SimpleDatasets(Dataset):
         return self.transform(segmentation) if self.transform is not None else segmentation
 
     def get_weights(self, index):
-        return de_minW(self.weights[index][None,:])
+        return self.weights[index][None,:]
 
 if __name__ == '__main__':
     from net_argparser import net_argparser
@@ -241,5 +241,5 @@ if __name__ == '__main__':
     print('load again to create experiments/')
     train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
     for i in range(5):
-        row = [train_dataset.get_image(i), train_dataset.get_segmentation(i), train_dataset.get_weights(i)]
+        row = [train_dataset.get_image(i), train_dataset.get_segmentation(i), de_minW(train_dataset.get_weights(i))]
         plot_multiple_images(i, row, dir='experiments/')
