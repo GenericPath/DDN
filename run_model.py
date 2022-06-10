@@ -15,7 +15,7 @@ momentums = [0.9, 0.95, 0.8]
 vals = [0.1]
 seeds = [0]
 total_imageses = [5000]
-net_sizes = [[1,8,16,8,-1]] # the -1 is replaced by radius value
+net_sizes = [[1,4,8,4,-1]] # the -1 is replaced by radius value
 image_sizes = [[16,16]]
 
 # newer ones
