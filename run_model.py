@@ -56,10 +56,6 @@ for epoch in epochs:
                         for dataset in datasets:
                             for radius in radiuses:
                                 for minify in minifys:
-                                    if minify: # replace the output size of weights network to radius, if minified
-                                        net_size[-1] = radius 
-                                    else: # otherwise its x*y
-                                        net_size[-1] = image_size[0]*image_size[1]
                                     for network in networks:
                                         for momentum in momentums:
                                             for val in vals:

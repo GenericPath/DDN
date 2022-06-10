@@ -35,6 +35,11 @@ class WeightsNet(nn.Module):
         self.img_size = args.img_size
         self.last_dim = self.img_size[0] * self.img_size[1]
 
+        if args.minify: # replace the output size of weights network to radius, if minified
+            args.net_size[-1] = args.radius 
+        else: # otherwise its x*y
+            args.net_size[-1] = args.image_size[0]*args.image_size[1]
+
         # CNN layers
         self.block1 = self.conv_block(c_in=args.net_size[0], c_out=args.net_size[1], kernel_size=3, stride=1, padding=1)
         self.block2 = self.conv_block(c_in=args.net_size[1], c_out=args.net_size[2], kernel_size=3, stride=1, padding=1)
