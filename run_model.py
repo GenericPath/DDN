@@ -15,7 +15,7 @@ momentums = [0.9, 0.95, 0.8]
 vals = [0.1]
 seeds = [0]
 total_imageses = [5000]
-net_sizes = [[1,4,8,4,-1]] # the -1 is replaced by radius value
+net_sizes = [[1,8,16,8,-1]] # the -1 is replaced by radius value
 image_sizes = [[16,16]]
 
 # newer ones
@@ -66,7 +66,7 @@ for epoch in epochs:
                                         # maybe automatically add all the things that have multiple options?
                                         run_name = 'run' + str(i) + '-net' + str(network) + '-ti' + str(total_images) + 'None'
                                         run_name += '-r' + str(radius) + '-min' + str(minify) 
-                                        run_name += '-lr' + str(lr)
+                                        run_name += '-lr' + str(lr) + "twiceWidth"
                                         command = ["python", script, 
                                                     "-n", folder + str(run_name),
                                                     "-e", str(epoch),
