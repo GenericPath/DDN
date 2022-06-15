@@ -51,6 +51,9 @@ def main():
     model = model.to(device=device)
     wandb.watch(model)
 
+    # TODO: add logging for images e.g. wandb.log({"examples" : [wandb.Image(im) for im in images_t]})
+    # TODO: add table for images https://docs.wandb.ai/guides/integrations/pytorch
+
 
     criterion = nn.BCEWithLogitsLoss() # BCEWithLogitsLoss to replace BCE with Sigmoid
     if args.optim == 'sgd':

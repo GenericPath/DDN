@@ -3,6 +3,7 @@
 
 # TODO: integrate into the data.py system
 # TODO: investigate the loss provided by the same repo
+#       https://arxiv.org/pdf/2006.14822.pdf for info on losses for segmentation
 # TODO: investigate the method used for accuracy by the same repo
 
 import numpy as np
