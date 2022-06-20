@@ -10,7 +10,7 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def net_argparser():
+def net_argparser(ipynb=False):
     """
     Uses argparse to parse all commandline arguments, used in main.py but also to test other parts separately.
     Usage: args = net_argparser()
@@ -29,7 +29,7 @@ def net_argparser():
     parser.add_argument('--gpu-id', '-gpu', type=str, default='1', dest='gpu', help='which id gpu to utilise (if present)')
 
     parser.add_argument('--net-size', '-ns', metavar='[...]', nargs='+', type=int, default=[1,4,8,4], dest='net_size_weights', help='weights: number of filters for each layer')
-    parser.add_argument('--net-size-post', '-ns', metavar='[...]', nargs='+', type=int, default=[1,4,8,4], dest='net_size_post', help='post: number of filters for the 3 layers')
+    parser.add_argument('--net-size-post', '-nsp', metavar='[...]', nargs='+', type=int, default=[1,4,8,4], dest='net_size_post', help='post: number of filters for the 3 layers')
 
 
 
@@ -53,5 +53,7 @@ def net_argparser():
 
     # TODO : add option to switch between eqconst
     parser.add_argument('--eqconst', default=True, type=bool, help='equality constrained or non equality constrained')
-
-    return parser.parse_args()
+    if ipynb:
+        return parser.parse_args(args=[])
+    else:
+        return parser.parse_args()

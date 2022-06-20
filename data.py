@@ -16,6 +16,12 @@ from nc import de_minW, manual_weight
 import matplotlib.pyplot as plt
 import torchvision.transforms.functional as F
 
+# TODO: salt and pepper noise (e.g. 10% example below from https://github.com/loli/medpy/blob/master/notebooks/Simple%20binary%20image%20processing.ipynb)
+# i, h = load("flair.nii.gz")
+# i[np.random.randint(0, i.shape[0], int(0.05 * i.size)), np.random.randint(0, i.shape[1], int(0.05 * i.size))] = i.min()
+# i[np.random.randint(0, i.shape[0], int(0.05 * i.size)), np.random.randint(0, i.shape[1], int(0.05 * i.size))] = i.max()
+# plt.imshow(i, cmap = cm.Greys_r);
+
 def get_dataset(args):
     """
     Creates the train_loader, val_loader
@@ -37,7 +43,7 @@ def get_dataset(args):
     return train_loader, val_loader
 
 
-def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsize=[32,32]):
+def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsize=[32,32], ipynb=False):
     """
     Images [input_batch, output_batch, weights]
     provide None for elements not present
@@ -71,8 +77,11 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
                 row_ax[j].set_title(str(labels[i]))
 
     plt.tight_layout()
-    plt.savefig(dir+'batch-'+str(batch_no)+'.png')
-    plt.close()
+    if not ipynb:
+        plt.savefig(dir+'batch-'+str(batch_no)+'.png')
+        plt.close()
+    else:
+        plt.show()
 
 def make_paths(args):
     img_size = args.img_size
