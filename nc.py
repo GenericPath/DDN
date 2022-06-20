@@ -104,8 +104,8 @@ class NormalizedCuts(AbstractDeclarativeNode):
     Normalized Cuts and Image Segmentation https://people.eecs.berkeley.edu/~malik/papers/SM-ncut.pdf
     Shi, J., & Malik, J. (2000)
     """
-    def __init__(self, chunk_size=None, eps=1e-12):
-        super().__init__(chunk_size=chunk_size, eps=eps) # input is divided into chunks of at most chunk_size
+    def __init__(self, chunk_size=None, eps=1e-12, gamma=None):
+        super().__init__(chunk_size=chunk_size, eps=eps, gamma=gamma) # input is divided into chunks of at most chunk_size
         
     def objective(self, x, y):
         """
