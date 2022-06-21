@@ -1,6 +1,5 @@
 # Deep Declarative Node for Normalised Cuts
 # Garth Wales - 2022
-import torch.utils.tensorboard as tb
 import torch
 
 import random, os, shutil
@@ -14,6 +13,7 @@ from model_loops import test, train, validate
 from model import Net, WeightsNet
 from net_argparser import net_argparser
 
+# import torch.utils.tensorboard as tb
 import wandb # replacing tensorboard, fun to try out
 
 # Maybe add this later
