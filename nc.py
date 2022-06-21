@@ -12,7 +12,7 @@ def manual_weight(name, r=1, minVer=False):
     """
     if type(name) == str: 
         I = plt.imread(name)
-        B,C = 1,1
+        B = 1
         x,y = I.shape
     else: 
         I = name
@@ -20,7 +20,7 @@ def manual_weight(name, r=1, minVer=False):
     
     N = x*y
     diags = r+1 if minVer else N
-    W = torch.zeros((B,C,N,N))
+    W = torch.zeros((B,N,N))
 
     r = min(N//2, r) # ensure the r value doesn't exceed the axes of the outputs
 
@@ -28,17 +28,16 @@ def manual_weight(name, r=1, minVer=False):
     # e.g. something like https://stackoverflow.com/a/43311126 or similar utilised
     I = I.flatten()
     for b in range(0, B):
-        for c in range(0, C):
-            for u in range(N): # could use step size of r to improve speed?
-                end = min(u+r+1, N) # upper triangle, only traverse as far as needed
-                for v in range(u,end):
-                    if np.linalg.norm(u-v) > r: # 4-way connection
-                        continue
-                    # Symmetric
-                    W[b][c][u][v] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0
-                    W[b][c][v][u] = 1 if I[u + c*N + b*N] == I[v + c*N + b*N] else 0
+        for u in range(N): # could use step size of r to improve speed?
+            end = min(u+r+1, N) # upper triangle, only traverse as far as needed
+            for v in range(u,end):
+                if np.linalg.norm(u-v) > r: # 4-way connection
+                    continue
+                # Symmetric
+                W[b][u][v] = 1 if I[u + b*N] == I[v + b*N] else 0
+                W[b][v][u] = 1 if I[u + b*N] == I[v + b*N] else 0
 
-    # testing = False
+    # testing = False # NOTE: will need to remove channels portion if using again
     # if testing:
     #     W_test = torch.zeros((B,C,N,N))
     #     for b in range(0, B):
@@ -55,14 +54,13 @@ def manual_weight(name, r=1, minVer=False):
     if minVer:
         # This will create an output which is just the important non-zero diagonals
         # should make learning much easier (3x1024 vs 1024x1024)
-        out = torch.zeros((B,C,r,N)) # r, not r+1 as the diagonal is always 1 in current scheme. same reason for range(1,...)
+        out = torch.zeros((B,r,N)) # r, not r+1 as the diagonal is always 1 in current scheme. same reason for range(1,...)
         for b in range(B):
-            for c in range(C):
-                for index, i in enumerate(range(1, diags)): # symmetric, so grabbing only upper tri diagonals
-                    temp_diag = torch.diag(W[b][c],i)
-                    pad = torch.zeros(N-len(temp_diag)) # pad with 0's to make it so it will fit
-                    out[b][c][index] = torch.cat([temp_diag, pad])
-        W = out # size is [1,1,r,N]
+            for index, i in enumerate(range(1, diags)): # symmetric, so grabbing only upper tri diagonals
+                temp_diag = torch.diag(W[b],i)
+                pad = torch.zeros(N-len(temp_diag)) # pad with 0's to make it so it will fit
+                out[b][index] = torch.cat([temp_diag, pad])
+        W = out # size is [1,r,N]
     return W
 
 def de_minW(out):
@@ -75,23 +73,22 @@ def de_minW(out):
     # work on an [N*N] 1d matrix... and would require less actual code?
     # would be much more computationally friendly..
 
-    B,C,r,N = out.shape
+    B,r,N = out.shape
     if r == N: # if already square, then don't bother
         return out
 
-    reconst = torch.zeros((B,C,N,N), device=out.device)
+    reconst = torch.zeros((B,N,N), device=out.device)
     diags = r + 1 # include the main diagonal of ones
     for b in range(B):
-        for c in range(C):
-            for i  in range(0, diags):
-                if i == 0: # add the main diagonal (of all ones)
-                    reconst[b][c] = torch.add(reconst[b][c], torch.eye(N, device=out.device))
-                else: # add the symmetric non-main diagonals
-                    diagonal = out[b][c][i-1]
-                    temp = torch.diag(diagonal[:N-i], i).to(out.device) # [:N-i] trims to fit the index'th diag size, places into index'th place
-                    reconst[b][c] = torch.add(reconst[b][c], temp) # add the upper diagonal (or middle if 0)
-                    temp = torch.diag(diagonal[:N-i], -i).to(out.device)
-                    reconst[b][c] = torch.add(reconst[b][c], temp) # add the lower diagonal (symmetric)
+        for i  in range(0, diags):
+            if i == 0: # add the main diagonal (of all ones)
+                reconst[b] = torch.add(reconst[b], torch.eye(N, device=out.device))
+            else: # add the symmetric non-main diagonals
+                diagonal = out[b][i-1]
+                temp = torch.diag(diagonal[:N-i], i).to(out.device) # [:N-i] trims to fit the index'th diag size, places into index'th place
+                reconst[b] = torch.add(reconst[b], temp) # add the upper diagonal (or middle if 0)
+                temp = torch.diag(diagonal[:N-i], -i).to(out.device)
+                reconst[b] = torch.add(reconst[b], temp) # add the lower diagonal (symmetric)
     return reconst
 
 def check_symmetric(a, rtol=1e-05, atol=1e-08): # defaults of allclose
@@ -128,14 +125,14 @@ class NormalizedCuts(AbstractDeclarativeNode):
         b, c, N = y.shape
         y = y.reshape(b,c,1,N) # convert to a col vector
 
-        d = torch.einsum('bcij->bcj', x) # eqv to x.sum(0) --- d vector
+        d = torch.einsum('bij->bj', x) # eqv to x.sum(0) --- d vector
         D = torch.diag_embed(d) # D = matrix with d on diagonal
 
         L = D-x
 
         return torch.div(
-            torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bckj->bcik', y, L), y),
-            torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bckj->bcik', y, D), y)
+            torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bkj->bcik', y, L), y),
+            torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bkj->bcik', y, D), y)
         ).squeeze(-2)
 
     
@@ -183,37 +180,35 @@ class NormalizedCuts(AbstractDeclarativeNode):
                 batch, channels of affinity/weight tensors (N = x * y from orignal x,y images)
 
         TODO: pass a parameter to avoid hardcoded output dimensions
-        """
-        A = A.detach() # TODO : verify if this breaks anything
+        """        
         # Implementation notes:
         # - requires einsum's to act on batch. Otherwise torch complains about tensors not being in graph being differentiated
-        # - D_inv_sqrt calculates the inv sqrt of diagonal only to avoid division by zero
+            # TODO: check if above claim is true still since refactoring
+        # - inf in D_inv_sqrt don't matter as other functions used seem to handle it fine, previously avoided by only inverting the diagonal
 
-        # obtain the batch and image size (sqrt of x/y to get out_size?)
+        A = A.detach() # TODO : verify if this breaks anything
+
         A = de_minW(A) # check if needs to be converted from minVer style
-        b,c,x,y = A.shape
+        b,x,y = A.shape
         out_size = int(np.sqrt(x)) # NOTE: assumes it is square..
+        output_size = (b,out_size,out_size)
 
         # can also replace bc with ...
-        d = torch.einsum('bcij->bcj', A) # eqv to A.sum(0) --- d vector
+        d = torch.einsum('bij->bj', A) # eqv to A.sum(0) --- d vector
         D = torch.diag_embed(d) # D = matrix with d on diagonal
-        D_inv_sqrt = torch.diag_embed(d.pow(-0.5)) # Don't calculate inverse sqrt of 0 entries (non diagonals)
+        D_inv_sqrt = torch.diag_embed(d.pow(-0.5)) # previously had pow inside diag
 
-        L = (D-A) # Laplacian matrix
+        L = D-A # Laplacian matrix
         # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
-        L_norm = torch.einsum('bcij,bcjk->bcik', torch.einsum('bcij,bcjk->bcik', D_inv_sqrt , L) , D_inv_sqrt)
+        L_norm = torch.einsum('...ij,...jk->...ik', torch.einsum('...ij,...jk->...ik', D_inv_sqrt , L) , D_inv_sqrt)
         L_norm = L_norm.to(A.device) # TODO : more elegant fix?
 
         # Solve eigenvectors and eigenvalues
         (w, v) = torch.linalg.eigh(L_norm)
         
-        # Returns the second smallest eigenvector (and possibly more if num_eigs > 1)
-        # eigenvector(s) reshaped to match original image size
-        num_eigs = 1
-        # TODO: verify if the eig is the correct one... (narrowed to index 1 not index 0, but possible it already removes this one)
-
-        # Detach inputs from graph, attach only the output (or if using optimisation to solve you can with torch.enable_grad() ( ... optim ))
-        output = v.narrow(-2, 1, num_eigs).squeeze(1).reshape(b, num_eigs, out_size, out_size).requires_grad_(True)
+        # Returns the second smallest eigenvector
+        output = v[:,:,1,None].reshape(output_size).requires_grad_(True)
+        # DNN NOTE: Detach inputs from graph, attach only the output (or if using optimisation to solve you can with torch.enable_grad() ( ... optim ))
         return output, None
     
     def test(self, x, y):
@@ -228,7 +223,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
 if __name__ == "__main__":
     from torchvision import transforms
     from net_argparser import net_argparser
-    from data import get_dataset, SimpleDatasets, plot_multiple_images
+    from data import SimpleDatasets, plot_multiple_images
 
     # 0.1 - quick checks that the node does the correct outputs
     args = net_argparser()
@@ -255,7 +250,7 @@ if __name__ == "__main__":
 
     # 0.2 - Misc checks...
     print("\nCheck minified converts to correct full form")
-    A = torch.randn(3,1,1,3)
+    A = torch.randn(3,1,3)
     print(A[0][0])
     full_A = de_minW(A)
     print(full_A[0][0])
@@ -270,10 +265,10 @@ if __name__ == "__main__":
 
     # 1. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
     print("\nstandard tests")
-    A = torch.randn(32,1,1024,1024, requires_grad=True, device=device) # real 32x32 image input
+    A = torch.randn(32,1024,1024, requires_grad=True, device=device) # real 32x32 image input
 
     A = torch.nn.functional.relu(A) # enforce positive constraint
-    A_t = torch.einsum('bcij->bcji', A) # transpose of batched matrix
+    A_t = torch.einsum('bij->bji', A) # transpose of batched matrix
     A = torch.matmul(A, A_t) # to create a positive semi-definite matrix
 
     node = NormalizedCuts()
@@ -292,7 +287,8 @@ if __name__ == "__main__":
     print('\nminVer tests')
     # 3. Confirm the node can calculate a first derivative (eg. does pytorch complain about anything?)
     #    for the minVer style
-    A = torch.randn(32,1,2,1024, requires_grad=True, device=device)
+    # TODO: fix this bit? or at least debug it a little
+    A = torch.randn(32,2,1024, requires_grad=True, device=device)
     A = torch.nn.functional.relu(A) # enforce positive constraint
 
     node = NormalizedCuts()
