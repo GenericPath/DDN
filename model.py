@@ -23,6 +23,12 @@ class Net(nn.Module):
         x = self.postNC(x)
         return x
 
+    def forward_plot(self,x):
+        x1 = self.weightsNet(x) # make the affinity matrix (or something else that works with)
+        x2 = self.decl(x1) # check the size of this output...
+        x3 = self.postNC(x2)
+        return de_minW(x1),x2,x3
+
 class WeightsNet(nn.Module):
     """
     Just learns the weights (to feed into NC)
