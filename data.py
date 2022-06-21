@@ -91,7 +91,7 @@ def make_paths(args):
         os.makedirs(full_path+'images/')
         print(full_path+'images/' + ' has been made')
 
-    weights_name ='weights-min'+str(args.minify)+'-r'+str(args.radius)
+    weights_name ='weights-min'+str(args.minify)+'-r'+str(args.radius)+'v2'
 
     return full_path, weights_name
 
