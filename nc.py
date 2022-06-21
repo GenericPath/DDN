@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 # local imports
 from node import *
 
+# NOTE: for all einsums, b/bc could be replaced with an ellipse ...
+
 def manual_weight(name, r=1, minVer=False):
     """
     I = Image name
@@ -122,17 +124,17 @@ class NormalizedCuts(AbstractDeclarativeNode):
         # x = de_minW(x) # check if needs to be converted from minVer style
 
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
-        b, c, N = y.shape
-        y = y.reshape(b,c,1,N) # convert to a col vector
+        b, N = y.shape
+        y = y.reshape(b,1,N) # convert to a col vector
 
         d = torch.einsum('bij->bj', x) # eqv to x.sum(0) --- d vector
         D = torch.diag_embed(d) # D = matrix with d on diagonal
 
         L = D-x
 
-        return torch.div(
-            torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bkj->bcik', y, L), y),
-            torch.einsum('bcij,bckj->bcik', torch.einsum('bcij,bkj->bcik', y, D), y)
+        return torch.div( # TODO: fix this
+            torch.einsum('bij,bkj->bik', torch.einsum('bij,bkj->bik', y, L), y),
+            torch.einsum('bij,bkj->bik', torch.einsum('bij,bkj->bik', y, D), y)
         ).squeeze(-2)
 
     
@@ -157,7 +159,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
         b, c, N = y.shape
         y = y.reshape(b,c,1,N) # convert to a col vector (y^T)
 
-        d = torch.einsum('bcij->bcj', x) # eqv to x.sum(0) --- d vector
+        d = torch.einsum('bij->bj', x) # eqv to x.sum(0) --- d vector
         D = torch.diag_embed(d).to(device=y.device) # D = matrix with d on diagonal
         ONE = torch.ones(b,c,N,1).to(device=y.device) # create a vector of ones
 
@@ -169,7 +171,7 @@ class NormalizedCuts(AbstractDeclarativeNode):
         # = B,C,1,1
 
         # return the constraint calculation, squeezed to output size
-        return torch.einsum('bcIK,bcKJ->bcIJ', torch.einsum('bcIK,bcKJ->bcIJ',y, D), ONE).squeeze(-2)
+        return torch.einsum('bIK,bKJ->bIJ', torch.einsum('bIK,bKJ->bIJ',y, D), ONE).squeeze(-2)
 
     def solve(self, A):
         """ 
