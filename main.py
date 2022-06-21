@@ -8,7 +8,8 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
 
-from data import get_dataset
+# from data import get_dataset, plot_multiple_images
+from data import *
 from model_loops import test, train, validate
 from model import Net, WeightsNet
 from net_argparser import net_argparser
@@ -88,10 +89,16 @@ def main():
     # Train the network (and test against the validation data)
     best_acc = 0
     best_error = float('inf')
+    train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
     for epoch in range(args.start_epoch, args.epochs):
 
         t_acc, t_loss = train(train_loader, model, device, criterion, optimizer) # TODO : check if this scheme makes sense (with opt and scheduler...)
         v_acc, v_loss = validate(val_loader, model, device, criterion, scheduler) # scheduler will change LR on val plateau, optim will
+
+        if epoch % 10 == 0: # every 10, output what everything looks like
+            data = [train_dataset.get_image(0)[None,:], train_dataset.get_segmentation(0), de_minW(train_dataset.get_weights(0))]
+            imgs = [data[1], model.forward_plot(data[0])]
+            plot_multiple_images(epoch, imgs, cmap_name='jet')
 
         # Currently best is based on acc, could be changed for loss
         is_best = v_acc > best_acc
