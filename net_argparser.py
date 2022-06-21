@@ -28,7 +28,7 @@ def net_argparser(ipynb=False):
     parser.add_argument('--total-images', '-ti', metavar='N', type=int, default=1000, dest='total_images', help='total number of images in dataset')
     parser.add_argument('--gpu-id', '-gpu', type=str, default='1', dest='gpu', help='which id gpu to utilise (if present)')
 
-    parser.add_argument('--net-size', '-ns', metavar='[...]', nargs='+', type=int, default=[1,4,8,4], dest='net_size_weights', help='weights: number of filters for each layer')
+    parser.add_argument('--net-size-weights', '-ns', metavar='[...]', nargs='+', type=int, default=[1,4,8,4], dest='net_size_weights', help='weights: number of filters for each layer')
     parser.add_argument('--net-size-post', '-nsp', metavar='[...]', nargs='+', type=int, default=[1,4,8,4], dest='net_size_post', help='post: number of filters for the 3 layers')
 
 
