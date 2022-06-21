@@ -43,7 +43,7 @@ def get_dataset(args):
     return train_loader, val_loader
 
 
-def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsize=[32,32], ipynb=False):
+def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsize=[32,32], ipynb=False, cmap_name='gray'):
     """
     Images [input_batch, output_batch, weights]
     provide None for elements not present
@@ -68,7 +68,7 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
         for j in range(ncols):
             img = images[j][i]
             img = F.to_pil_image(img)
-            row_ax[j].imshow(np.asarray(img), cmap='gray')
+            row_ax[j].imshow(np.asarray(img), cmap=plt.get_cmap(cmap_name))
 
             # useful labels include the calculated accuracy or losses...
             if labels is not None:
