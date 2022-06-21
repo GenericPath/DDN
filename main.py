@@ -31,8 +31,8 @@ def main():
 
     cudnn.benchmark = True # Cuda optimisations when using a fixed input size
 
-    # device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
-    device = 'cpu' # hardcode to use cpu when neccessary
+    device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
+    # device = 'cpu' # hardcode to use cpu when neccessary
     print(f'Using device {device}')
 
     if args.name:
@@ -43,9 +43,9 @@ def main():
 
     # Create the model, loss, optimizer and scheduler
     if args.network == 1:
-        model = WeightsNet(args)
+        model = WeightsNet(args).to(device)
     else:
-        model = Net(args)
+        model = Net(args).to(device)
 
     # wandb.init(project='ddn')    
     # wandb.config = args # NOTE: not sure if this is gonna work
