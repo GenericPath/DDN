@@ -47,6 +47,8 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
     """
     Images [input_batch, output_batch, weights]
     provide None for elements not present
+
+    NOTE: use de_minW(img[None,:])[0] or similar for any minified weights
     """
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -65,10 +67,6 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
     for i, row_ax in enumerate(ax): # could flatten if not explicitly doing in pairs (ax.flat)
         for j in range(ncols):
             img = images[j][i]
-            if j == 2:
-                # de_minW checks if it is minified weights (r,N) or already something expanded (N,N)
-                img = de_minW(img[None,:])[0] # expand with dummy batches (may need to reduce to [0][0] for single channel plots?)
-
             img = F.to_pil_image(img)
             row_ax[j].imshow(np.asarray(img), cmap='gray')
 
@@ -78,7 +76,9 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
 
     plt.tight_layout()
     if not ipynb:
-        plt.savefig(dir+'batch-'+str(batch_no)+'.png')
+        name = dir+'batch-'+str(batch_no)+'.png'
+        plt.savefig(name)
+        print(f'saved {name}')
         plt.close()
     else:
         plt.show()
@@ -238,12 +238,13 @@ if __name__ == '__main__':
 
     args = net_argparser()
     args.network = 1
-    args.total_images = 1000
+    args.total_images = 10
     args.minify = True
-    args.radius = 5
+    args.radius = 20
     args.img_size = [32,32] # the default is 32,32 anyway
 
     # TODO: check loading minified weights and non-minified weights is equivalent
+    # TODO: check if the data default should be 1 or 0... torch.zeros vs torch.ones... for weights only training
     
     train_loader, val_loader = get_dataset(args)
 
