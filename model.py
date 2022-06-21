@@ -12,6 +12,7 @@ class Net(nn.Module):
     def __init__(self, args):
         super(Net, self).__init__()
         self.weightsNet = WeightsNet(args)
+        # TODO: test gamma term for NormalizedCuts
         self.nc = NormalizedCuts(eps=1) # eps sets the absolute difference between objective solutions and 0
         self.decl = DeclarativeLayer(self.nc) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
         self.postNC = PostNC(args)
@@ -59,11 +60,9 @@ class WeightsNet(nn.Module):
         x = self.restrict(x)
 
         # combine the 32x32 * last_size into the correct output size (full matrix or not...)
+        x = x.view(x.size(0), self.last_size, self.last_dim)
         if self.net_no == 0: # Passes into NC node by converting to full
-            x = x.view(x.size(0), 1, self.last_size, self.last_dim)
             x = de_minW(x)
-        elif self.net_no == 1: # Just trains for weights as output (as is full/minified)
-            x = x.view(x.size(0), 1, self.last_size, self.last_dim)
         return x
 
     def conv_block(self, c_in, c_out, **kwargs):
@@ -87,7 +86,6 @@ class PostNC(nn.Module):
         self.stride = 1
         self.padding = 1
 
-
         self.layers = nn.ModuleList()
         for k in range(len(args.net_size_post)-1):
             self.layers.append(self.conv_block(c_in=args.net_size_post[k], c_out=args.net_size_post[k+1], 
@@ -97,6 +95,7 @@ class PostNC(nn.Module):
         self.lastcnn = nn.Conv2d(in_channels=args.net_size_post[-1], out_channels=1, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
 
     def forward(self, x):
+        # TODO: future model with support for multiple cuts will not hardcore channel number as 1?
         x = x.view(x.size(0), 1, self.img_size[0], self.img_size[1]) # convert from NC node into this
         for layer in self.layers:
             x = layer(x)
