@@ -40,7 +40,7 @@ if args.production:
     script = folder + script
 
 commands = {
-    '-e' : [10],
+    '-e' : [150],
     '-b' : [32],
     '-lr' : [0.01],
     '-ti' : [5000],
