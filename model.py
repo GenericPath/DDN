@@ -11,11 +11,13 @@ class Net(nn.Module):
     """
     def __init__(self, args):
         super(Net, self).__init__()
-        self.weightsNet = WeightsNet(args)
-        # TODO: test gamma term for NormalizedCuts
-        self.nc = NormalizedCuts(eps=1) # eps sets the absolute difference between objective solutions and 0
-        self.decl = DeclarativeLayer(self.nc) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
-        self.postNC = PostNC(args)
+        # enforce the weights being on the same device
+        device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
+        # the actual layers (nc is placed into dec layer to convert to general pytorch layer)
+        self.weightsNet = WeightsNet(args).to(device)
+        self.nc = NormalizedCuts(eps=1).to(device) # eps sets the absolute difference between objective solutions and 0
+        self.decl = DeclarativeLayer(self.nc).to(device) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
+        self.postNC = PostNC(args).to(device)
 
     def forward(self, x):
         x = self.weightsNet(x) # make the affinity matrix (or something else that works with)
