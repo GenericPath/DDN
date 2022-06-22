@@ -56,7 +56,7 @@ commands = {
     "-s" : [0],
     "--net-size-weights" : [[1,4,8,4]],
     "--net-size-post" : [[1,4,8,4]],
-    "--gamma" : [None],
+    "--gamma" : [0],
     "--eps" : [1]
 }
 
