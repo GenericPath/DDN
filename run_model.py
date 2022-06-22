@@ -56,6 +56,8 @@ commands = {
     "-s" : [0],
     "--net-size-weights" : [[1,4,8,4]],
     "--net-size-post" : [[1,4,8,4]],
+    "--gamma" : [None],
+    "--eps" : [1]
 }
 
 # [dict(zip(d, v)) for v in product(*d.values())]
