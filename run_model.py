@@ -1,6 +1,6 @@
 from subprocess import Popen # to create the python process(es)
 import os, time, argparse, shutil # setup of args, folders and files
-from itertools import product, chain # for automatically creating all the combinations
+from itertools import product # for automatically creating all the combinations
 import pprint  # for printing/writing a dict nicely
 from typing import Iterable # for flattening
 
