@@ -98,7 +98,7 @@ def main():
         if epoch % 10 == 0: # every 10, output what everything looks like
             data = [train_dataset.get_image(0)[None,:], train_dataset.get_segmentation(0), de_minW(train_dataset.get_weights(0))]
             imgs = [data[1], model.forward_plot(data[0])]
-            plot_multiple_images(epoch, imgs, cmap_name='jet')
+            plot_multiple_images(epoch, imgs, dir= 'experiments/'+args.name+'/', cmap_name='jet')
 
         # Currently best is based on acc, could be changed for loss
         is_best = v_acc > best_acc
