@@ -52,6 +52,8 @@ def net_argparser(ipynb=False):
  
     # TODO: test gamma term
     parser.add_argument('--gamma', '-g', type=float, default=None, help='gamma term, adds constant to H to allow cholesky decomp')
+    parser.add_argument('--eps', type=float, default=1e-12, help='eps term, the max allowed difference from 0 for fY of objective')
+
 
     if ipynb:
         return parser.parse_args(args=[])
