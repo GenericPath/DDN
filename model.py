@@ -15,7 +15,7 @@ class Net(nn.Module):
         device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
         # the actual layers (nc is placed into dec layer to convert to general pytorch layer)
         self.weightsNet = WeightsNet(args).to(device)
-        self.nc = NormalizedCuts(eps=1) # eps sets the absolute difference between objective solutions and 0
+        self.nc = NormalizedCuts(eps=0, gamma=args.gamma) # eps sets the absolute difference between objective solutions and 0
         self.decl = DeclarativeLayer(self.nc).to(device) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
         self.postNC = PostNC(args).to(device)
 

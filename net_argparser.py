@@ -31,21 +31,17 @@ def net_argparser(ipynb=False):
     parser.add_argument('--net-size-weights', '-ns', metavar='[...]', nargs='+', type=int, default=[1,4,8,4], dest='net_size_weights', help='weights: number of filters for each layer')
     parser.add_argument('--net-size-post', '-nsp', metavar='[...]', nargs='+', type=int, default=[1,4,8,4], dest='net_size_post', help='post: number of filters for the 3 layers')
 
-
-
     # currently no options to use
     parser.add_argument('--optim', '-o', metavar='OPT', type=str, default='sgd', dest='optim', help='optimiser to use')
     parser.add_argument('--shuffle', type=bool, default=True, help='shuffle batches')
     parser.add_argument('--dataset', type=str, default='simple01', help='dataset to use: simple01')
 
-    # newer
     parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
     parser.add_argument('--test', action='store_true', help='Whether to test/evaluate or train')
     parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--production', default=False, type=bool, help='Production mode: If true run in a separate folder on a copy of the python scripts')
     parser.add_argument('--network', default=0, type=int, help='network to use: 0=Net (Weights->NC->Post), 1=WeightsNet (Weights)')
 
-    # newest
     parser.add_argument('--minify', type=str2bool, nargs='?', const=True, default=False, help='minify the weights mode (for the PreNC portion)')
     parser.add_argument('--radius', '-r', default=5, type=int, help='radius value for expected weights (only relevant for minified version)')
 
@@ -53,6 +49,10 @@ def net_argparser(ipynb=False):
 
     # TODO : add option to switch between eqconst
     parser.add_argument('--eqconst', default=True, type=bool, help='equality constrained or non equality constrained')
+ 
+    # TODO: test gamma term
+    parser.add_argument('--gamma', '-g', type=float, default=None, help='gamma term, adds constant to H to allow cholesky decomp')
+
     if ipynb:
         return parser.parse_args(args=[])
     else:
