@@ -76,24 +76,24 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
 
     plt.tight_layout()
     if not ipynb:
-        name = dir+'batch-'+str(batch_no)+'.png'
+        name = dir+str(batch_no)+'.png'
         plt.savefig(name)
         print(f'saved {name}')
         plt.close()
     else:
         plt.show()
 
-def make_paths(args):
+def make_paths(args, path=None):
     img_size = args.img_size
-    path = 'data/' + args.dataset + '/'
-    full_path = path+f'{img_size[0]}-{img_size[1]}/'    
-    if not os.path.exists(full_path+'images/'):
-        os.makedirs(full_path+'images/')
-        print(full_path+'images/' + ' has been made')
-
+    if path == None:
+        path = 'data/' + args.dataset + '/'
+        path = path+f'{img_size[0]}-{img_size[1]}/'    
+        if not os.path.exists(path+'images/'):
+            os.makedirs(path+'images/')
+            print(path+'images/' + ' has been made')
     weights_name ='weights-min'+str(args.minify)+'-r'+str(args.radius)+'v2'
 
-    return full_path, weights_name
+    return path, weights_name
 
 def load_dataset(full_path, weights_path, num_images):
     """
@@ -200,6 +200,65 @@ class SimpleDatasets(Dataset):
 
         # make the dataset (if needed)
         data(full_path, weights_name, args)
+        # load the dataset
+        self.images, self.segmentations,self.weights = load_dataset(full_path+'dataset', full_path+weights_name, self.total_images)
+            
+    def __len__(self):
+        return len(self.images)
+    
+    def __getitem__(self, index):
+        # 1. load image
+        img = cv2.imread(self.images[index], 0) # or switch to PIL.Image.open() and then img.load()?
+        if self.transform is not None:
+            img = self.transform(img)
+        
+        # 2. load target (based on network)
+        if self.network == 1: # weights
+            y_label = self.weights[index]
+        else: # simple01
+            y_label = self.segmentations[index]
+            if self.transform is not None: 
+                y_label = self.transform(y_label)
+        return (img, y_label)
+    
+    # TODO: actually use these helper functions
+    def get_image(self, index):
+        image = cv2.imread(self.images[index], 0)
+        return self.transform(image) if self.transform is not None else image
+
+    def get_segmentation(self, index):
+        segmentation = self.segmentations[index]
+        return self.transform(segmentation) if self.transform is not None else segmentation
+
+    def get_weights(self, index):
+        return self.weights[index][None,:]
+
+class CustomFolders(Dataset):
+    """ Simple dataset from folders """
+    
+    def __init__(self, args, transform=None):
+        """
+        file (string): Path to the pickle that contains [img paths, output arrays]
+        Creates the dataset if needed, and then loads it into class instance
+        """
+        self.network = args.network
+        self.total_images = args.total_images
+        self.size = args.img_size
+        self.transform = transform
+
+        img_path = args.img_path # TODO: add to argsparse, TODO: default to None
+        seg_path = args.seg_path # TODO: add to argsparse
+
+        full_path, weights_name = make_paths(args, path = img_path)
+
+        # make the dataset (if needed)
+        # data_texture_color(full_path, weights_name, args) # TOOD: fix this
+        # TODO : plan: separate .py generates folders
+        # TODO : load as folders specified on command line!
+        # TODO : so not data_texture_colour here...? except weights creation...
+        # TODO : just have to loop through all files in the dir to pass https://discuss.pytorch.org/t/dataloader-for-semantic-segmentation/48290/10
+
+
         # load the dataset
         self.images, self.segmentations,self.weights = load_dataset(full_path+'dataset', full_path+weights_name, self.total_images)
             
