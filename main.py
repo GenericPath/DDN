@@ -14,8 +14,8 @@ from model_loops import test, train, validate
 from model import Net, WeightsNet
 from net_argparser import net_argparser
 
-import torch.utils.tensorboard as tb
-# import wandb # replacing tensorboard, fun to try out
+# import torch.utils.tensorboard as tb
+import wandb # replacing tensorboard, fun to try out
 
 # Maybe add this later
 # from torchsummary import summary
@@ -39,7 +39,7 @@ def main():
         results = args.name + '/'
         if not os.path.exists(results):
             os.makedirs(results)
-        args.writer = tb.SummaryWriter(results)
+    #     args.writer = tb.SummaryWriter(results)
 
     # Create the model, loss, optimizer and scheduler
     if args.network == 1:
@@ -47,10 +47,10 @@ def main():
     else:
         model = Net(args).to(device)
 
-    # wandb.init(project='ddn')    
-    # wandb.config = args # NOTE: not sure if this is gonna work
-    # model = model.to(device=device)
-    # wandb.watch(model)
+    wandb.init(project='ddn')    
+    wandb.config = args # NOTE: not sure if this is gonna work
+    model = model.to(device=device)
+    wandb.watch(model)
 
     # TODO: add logging for images e.g. wandb.log({"examples" : [wandb.Image(im) for im in images_t]})
     # TODO: add table for images https://docs.wandb.ai/guides/integrations/pytorch
@@ -105,15 +105,15 @@ def main():
         best_error = min(v_loss, best_error)
         best_acc = min(v_acc, best_acc)
 
-        # wandb.log({"loss/val": v_loss,
-        #             "acc/val": v_acc,
-        #             "loss/train":t_loss,
-        #             "acc/train": t_acc})
-        if args.writer:
-            args.writer.add_scalar("Loss/val", v_loss, epoch)
-            args.writer.add_scalar("Acc/val", v_acc, epoch)
-            args.writer.add_scalar("Acc/train", t_acc, epoch)
-            args.writer.add_scalar("Loss/train", t_loss, epoch)
+        wandb.log({"loss/val": v_loss,
+                    "acc/val": v_acc,
+                    "loss/train":t_loss,
+                    "acc/train": t_acc})
+        # if args.writer:
+        #     args.writer.add_scalar("Loss/val", v_loss, epoch)
+        #     args.writer.add_scalar("Acc/val", v_acc, epoch)
+        #     args.writer.add_scalar("Acc/train", t_acc, epoch)
+        #     args.writer.add_scalar("Loss/train", t_loss, epoch)
 
         save_checkpoint({
             'epoch': epoch + 1,
@@ -123,8 +123,8 @@ def main():
             'optimizer' : optimizer.state_dict(),
         }, is_best, dir=results, filename='latest_epoch')
 
-    if args.writer:
-        args.writer.close()
+    # if args.writer:
+    #     args.writer.close()
 
 def save_checkpoint(state, is_best, dir='', filename='checkpoint'):
     torch.save(state, dir + filename + '.pth.tar')
