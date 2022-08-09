@@ -1,4 +1,4 @@
-import os, cv2, random, copy
+import os, cv2, random
 import numpy as np
 from glob import glob
 from matplotlib import cm
@@ -41,12 +41,15 @@ def texture_colour(path, num_images):
         # could use this way instead? and PIL Image, but this works fine!
         # im = Image.fromarray(cm.gist_earth(myarray, bytes=True))
         image, colour_mask, texture_mask = make_texture_colour_image(imgs, cmaps)
-        image_name = tc_img+'img'+str(i)+'.png'
+
+        image_name = tc_img+'img'+str(i)+'.jpg'
         imsave(image_name, image)
-        mask_colour_name = masksC+'img'+str(i)+'.png'
+        mask_colour_name = masksC+'img'+str(i)+'.gif'
         imsave(mask_colour_name, colour_mask, cmap='Greys')
-        mask_texture_name = masksT+'img'+str(i)+'.png'
+        mask_texture_name = masksT+'img'+str(i)+'.gif'
         imsave(mask_texture_name, texture_mask, cmap='Greys')
+
+    print(f'Generated {i+1} images')
 
 def bresenhams(array,x1,y1,x2,y2, fill_value=255):
     # from https://github.com/encukou/bresenham/blob/master/bresenham.py

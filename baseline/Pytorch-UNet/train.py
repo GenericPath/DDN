@@ -1,6 +1,5 @@
 import argparse
 import logging
-import sys
 from pathlib import Path
 
 import torch
@@ -9,6 +8,7 @@ import torch.nn.functional as F
 import wandb
 from torch import optim
 from torch.utils.data import DataLoader, random_split
+from torchvision import transforms
 from tqdm import tqdm
 
 from utils.data_loading import BasicDataset
@@ -20,7 +20,7 @@ from unet import UNet
 
 dir_img = Path('../../data/tc/img/')
 dir_mask = Path('../../data/tc/maskC/')
-dir_checkpoint = Path('../../data/tc/img/')
+dir_checkpoint = Path('../../data/tc/')
 
 
 def train_net(net,
@@ -33,7 +33,7 @@ def train_net(net,
               img_scale: float = 1,
               amp: bool = False):
     # 1. Create dataset
-    dataset = BasicDataset(dir_img, dir_mask, img_scale)
+    dataset = BasicDataset(dir_img, dir_mask, scale=img_scale, transform = transforms.ToTensor())
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
@@ -77,7 +77,7 @@ def train_net(net,
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
-                true_masks = batch['mask']/255
+                true_masks = batch['mask']
 
                 assert images.shape[1] == net.n_channels, \
                     f'Network has been defined with {net.n_channels} input channels, ' \
@@ -85,7 +85,7 @@ def train_net(net,
                     'the images are loaded correctly.'
 
                 images = images.to(device=device, dtype=torch.float32)
-                true_masks = true_masks.to(device=device, dtype=torch.long)
+                true_masks = true_masks.to(device=device, dtype=torch.long) # for one hot encoding
 
                 with torch.cuda.amp.autocast(enabled=amp):
                     masks_pred = net(images)
@@ -138,7 +138,7 @@ def train_net(net,
 
         if save_checkpoint:
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
-            torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
+            torch.save(net.state_dict(), str(dir_checkpoint / f'checkpoint-{experiment.name}_epoch-{epoch}.pth'))
             logging.info(f'Checkpoint {epoch} saved!')
 
 
@@ -149,7 +149,7 @@ def get_args():
     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-5,
                         help='Learning rate', dest='lr')
     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--scale', '-s', type=float, default=1, help='Downscaling factor of the images')
+    parser.add_argument('--scale', '-s', type=float, default=0.5, help='Downscaling factor of the images')
     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=4, n_classes=args.classes, bilinear=args.bilinear)
+    net = UNet(n_channels=3, n_classes=2, bilinear=args.bilinear)
 
     logging.info(f'Network:\n'
                  f'\t{net.n_channels} input channels\n'

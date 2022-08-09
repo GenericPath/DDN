@@ -10,12 +10,13 @@ from torch.utils.data import Dataset
 
 
 class BasicDataset(Dataset):
-    def __init__(self, images_dir: str, masks_dir: str, scale: float = 1.0, mask_suffix: str = ''):
+    def __init__(self, images_dir: str, masks_dir: str, transform, scale: float = 1.0, mask_suffix: str = ''):
         self.images_dir = Path(images_dir)
         self.masks_dir = Path(masks_dir)
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
         self.scale = scale
         self.mask_suffix = mask_suffix
+        self.transform = transform
 
         self.ids = [splitext(file)[0] for file in listdir(images_dir) if not file.startswith('.')]
         if not self.ids:
@@ -36,10 +37,10 @@ class BasicDataset(Dataset):
         if not is_mask:
             if img_ndarray.ndim == 2:
                 img_ndarray = img_ndarray[np.newaxis, ...]
-            else:
+            else: # this is to swap the order to what pytorch likes... except transforms.ToTensor() does this instead!
                 img_ndarray = img_ndarray.transpose((2, 0, 1))
 
-            img_ndarray = img_ndarray / 255
+            img_ndarray = img_ndarray
 
         return img_ndarray
 
@@ -69,7 +70,13 @@ class BasicDataset(Dataset):
         img = self.preprocess(img, self.scale, is_mask=False)
         mask = self.preprocess(mask, self.scale, is_mask=True)
 
+        # if self.transform is not None:
+        #     img = self.transform(img)
+        #     mask = self.transform(mask)            
+
         return {
             'image': torch.as_tensor(img.copy()).float().contiguous(),
             'mask': torch.as_tensor(mask.copy()).long().contiguous()
+            # 'image': img,
+            # 'mask': mask.long().contiguous()
         }
