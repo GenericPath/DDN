@@ -11,18 +11,19 @@
             "program": "${file}",
             "console": "internalConsole",
             "justMyCode": true,
-            "args": [
-                "-b", "5",
-                "--production", "True",
-                "--network", "0",
-                "-ti", "10",
-                "--dataset", "simple01",
-                "-ns", "1", "4", "8", "4", "5",  // last dimension must match the full size if minify False
-                "--radius", "5",
-                "--minify", "True",
-                "--img-size", "16", "16"
-                // "--test"
-             ]
+            "cwd": "${fileDirname}",
+            // "args": [
+            //     "-b", "5",
+            //     "--production", "True",
+            //     "--network", "0",
+            //     "-ti", "10",
+            //     "--dataset", "simple01",
+            //     "-ns", "1", "4", "8", "4", "5",  // last dimension must match the full size if minify False
+            //     "--radius", "5",
+            //     "--minify", "True",
+            //     "--img-size", "16", "16"
+            //     // "--test"
+            //  ]
         }
     ]
 }
