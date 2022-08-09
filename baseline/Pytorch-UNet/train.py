@@ -140,7 +140,7 @@ if __name__ == '__main__':
     hyperparameter_defaults = dict(
         epochs=5, 
         dir_img='tc/img/', # defaults to data/ + data_path
-        dir_mask='tc/maskT', # same as above
+        dir_mask='tc/maskC', # same as above
         batch_size = 10,
         lr = 1e-3, # will lower during training
         load=False, # Load model from a .pth file
