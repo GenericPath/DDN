@@ -58,7 +58,7 @@ def train_net(net, args, experiment, save_checkpoint = True):
     ''')
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optim.RMSprop(net.parameters(), lr=args.lr, weight_decay=1e-8, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=1e-8, momentum=0.9)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
     criterion = nn.CrossEntropyLoss()
@@ -141,13 +141,13 @@ if __name__ == '__main__':
         epochs=5, 
         dir_img='tc/img/', # defaults to data/ + data_path
         dir_mask='tc/maskC', # same as above
-        batch_size = 10,
-        lr = 1e-3, # will lower during training
+        batch_size = 30,
+        lr = 1e-4, # will lower during training
         load=False, # Load model from a .pth file
-        img_scale=0.5, # Downscaling factor of the images
+        img_scale=1, # Downscaling factor of the images
         val=10.0, # Percent of the data that is used as validation (0-100)
         amp=False, # Use mixed precision
-        bilinear = False, # Use bilinear upsampling
+        bilinear = True, # Use bilinear upsampling
         n_classes=2, # Number of classes
         n_channels=3, # 3 for RGB inputs
     )
