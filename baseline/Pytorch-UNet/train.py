@@ -16,19 +16,21 @@ from utils.dice_score import dice_loss
 from evaluate import evaluate
 from unet import UNet
 
-dir_img = Path('../../data/simple01/16-16/images/')
-dir_mask = Path('../../data/simple01/16-16/images/')
-dir_checkpoint = Path('./checkpoints/')
+
+
+dir_img = Path('/Users/garth/Desktop/DDN/data/simple01/16-16/images')
+dir_mask = Path('/Users/garth/Desktop/DDN/data/simple01/16-16/images')
+dir_checkpoint = Path('/Users/garth/Desktop/DDN/data/simple01/16-16/')
 
 
 def train_net(net,
               device,
               epochs: int = 5,
-              batch_size: int = 1,
+              batch_size: int = 10,
               learning_rate: float = 1e-5,
               val_percent: float = 0.1,
               save_checkpoint: bool = True,
-              img_scale: float = 0.5,
+              img_scale: float = 1,
               amp: bool = False):
     # 1. Create dataset
     dataset = BasicDataset(dir_img, dir_mask, img_scale)
@@ -75,7 +77,7 @@ def train_net(net,
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
-                true_masks = batch['mask']
+                true_masks = batch['mask']/255
 
                 assert images.shape[1] == net.n_channels, \
                     f'Network has been defined with {net.n_channels} input channels, ' \
@@ -147,7 +149,7 @@ def get_args():
     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-5,
                         help='Learning rate', dest='lr')
     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--scale', '-s', type=float, default=0.5, help='Downscaling factor of the images')
+    parser.add_argument('--scale', '-s', type=float, default=1, help='Downscaling factor of the images')
     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
