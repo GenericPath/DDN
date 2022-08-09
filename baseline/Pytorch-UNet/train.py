@@ -113,11 +113,11 @@ def train_net(net,
                 division_step = (n_train // (10 * batch_size))
                 if division_step > 0:
                     if global_step % division_step == 0:
-                        histograms = {}
-                        for tag, value in net.named_parameters():
-                            tag = tag.replace('/', '.')
-                            histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                            histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
+                        # histograms = {}
+                        # for tag, value in net.named_parameters():
+                        #     tag = tag.replace('/', '.')
+                        #     histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
+                        #     histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
                         val_score = evaluate(net, val_loader, device)
                         scheduler.step(val_score)
@@ -133,7 +133,7 @@ def train_net(net,
                             },
                             'step': global_step,
                             'epoch': epoch,
-                            **histograms
+                            # **histograms
                         })
 
         if save_checkpoint:
