@@ -16,7 +16,10 @@ from utils.dice_score import dice_loss
 from evaluate import evaluate
 from unet import UNet
 
-
+import sys
+sys.path.append("../..")
+from model import Net as DDNNet
+from model import WeightsNet
 
 dir_checkpoint = Path('../../data/tc/')
 base_path = '../../data/'
@@ -32,18 +35,12 @@ def train_net(net, args, experiment, save_checkpoint = True):
     val_percent = args.val / 100
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
-    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(args.seed))
 
     # 3. Create data loaders
     loader_args = dict(batch_size=args.batch_size, num_workers=4, pin_memory=True)
-    train_loader = DataLoader(train_set, shuffle=True, drop_last=True,**loader_args)
+    train_loader = DataLoader(train_set, shuffle=args.shuffle, drop_last=True,**loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
-
-    # (Initialize logging)
-    # experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
-    # experiment.config.update(dict(epochs=args.epochs, batch_size=args.batch_size, learning_rate=args.lr,
-    #                               val_percent=args.val_percent, save_checkpoint=save_checkpoint, img_scale=args.img_scale,
-    #                               amp=amp))
 
     logging.info(f'''Starting training:
         Epochs:          {args.epochs}
@@ -58,8 +55,11 @@ def train_net(net, args, experiment, save_checkpoint = True):
     ''')
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=1e-8, momentum=0.9)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
+    if args.optim == 'sgd':
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum)
+    else:
+        raise Exception(f'Optimizer not supported - {args.optim}')
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=args.patience)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
     criterion = nn.CrossEntropyLoss()
     global_step = 0
@@ -72,11 +72,6 @@ def train_net(net, args, experiment, save_checkpoint = True):
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']
-
-                assert images.shape[1] == net.n_channels, \
-                    f'Network has been defined with {net.n_channels} input channels, ' \
-                    f'but loaded images have {images.shape[1]} channels. Please check that ' \
-                    'the images are loaded correctly.'
 
                 images = images.to(device=device, dtype=torch.float32)
                 true_masks = true_masks.to(device=device, dtype=torch.long) # for one hot encoding
@@ -138,37 +133,71 @@ def train_net(net, args, experiment, save_checkpoint = True):
 if __name__ == '__main__':
     # Default parameters
     hyperparameter_defaults = dict(
-        epochs=5, 
-        dir_img='tc/img/', # defaults to data/ + data_path
-        dir_mask='tc/maskC', # same as above
-        batch_size = 30,
+        epochs=10, 
+        batch_size = 5,
+
         lr = 1e-4, # will lower during training
-        load=False, # Load model from a .pth file
-        img_scale=1, # Downscaling factor of the images
+        weight_decay=1e-8,
+        momentum=0.9,
+        patience=2,
+
+        # dir_img='tc/img/', # defaults to data/ + data_path
+        # dir_mask='tc/maskC', # same as above
+
+        dir_img = 'simple01/16-16/images',
+        dir_mask = 'simple01/16-16/images',
+
         val=10.0, # Percent of the data that is used as validation (0-100)
-        amp=False, # Use mixed precision
-        bilinear = True, # Use bilinear upsampling
+
         n_classes=2, # Number of classes
         n_channels=3, # 3 for RGB inputs
+
+        seed=0,
+        gpu=1,
+        load=False, # Load model from a .pth file
+        test=False,
+        img_scale=1, # Downscaling factor of the images
+
+        amp=False, # Use mixed precision
+        bilinear = True, # Use bilinear upsampling
+
+        net='DDN',
+        minify=True,
+        radius=10,
+        eqconst=True,
+        eps=1e-4,
+        gamma=1,
+        net_size_weights=[1,4,8,4],
+        net_size_post=[1,4,8,4],
+        img_size = [16,16],
+
+        # NOT USED YET
+        optim='sgd',
+        shuffle=True
+
     )
 
-    experiment = wandb.init(config=hyperparameter_defaults)
+    experiment = wandb.init(project='DDN-NC', config=hyperparameter_defaults)
     # Config parameters are automatically set by W&B sweep agent
     args = wandb.config
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
 
-    # Change here to adapt to your data
-    # n_channels=3 for RGB images
-    # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=args.n_channels, n_classes=args.n_classes, bilinear=args.bilinear)
-
-    logging.info(f'Network:\n'
-                 f'\t{net.n_channels} input channels\n'
-                 f'\t{net.n_classes} output channels (classes)\n'
-                 f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+    if args.net == 'DDN':
+        args.network = 0
+        net = DDNNet(args)
+    elif args.net == 'DDN-weights':
+        args.network = 1
+        net = WeightsNet(args)
+    elif args.net == 'UNet':
+        net = UNet(n_channels=args.n_channels, n_classes=args.n_classes, bilinear=args.bilinear)
+        # Change here to adapt to your data
+        # n_channels=3 for RGB images
+        # n_classes is the number of probabilities you want to get per pixel
+    else:
+        raise Exception(f"incorrect network specified - {args.net}")
 
     if args.load:
         net.load_state_dict(torch.load(args.load, map_location=device))
