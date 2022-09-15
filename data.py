@@ -73,7 +73,7 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
 
             # useful labels include the calculated accuracy or losses...
             if labels is not None:
-                row_ax[j].set_title(str(labels[i]))
+                row_ax[j].set_title(str(labels[j]))
 
     plt.tight_layout()
     if not ipynb:

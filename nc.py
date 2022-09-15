@@ -96,14 +96,14 @@ def de_minW(out):
 def check_symmetric(a, rtol=1e-05, atol=1e-08): # defaults of allclose
     return torch.allclose(a, a.transpose(-2,-1), rtol, atol)
 
-class NormalizedCuts(AbstractDeclarativeNode):
+class NormalizedCuts(EqConstDeclarativeNode): # AbstractDeclarativeNode vs EqConstDeclarativeNode
     """
     A declarative node to embed Normalized Cuts into a Neural Network
     
     Normalized Cuts and Image Segmentation https://people.eecs.berkeley.edu/~malik/papers/SM-ncut.pdf
     Shi, J., & Malik, J. (2000)
     """
-    def __init__(self, chunk_size=None, eps=1e-12, gamma=None):
+    def __init__(self, chunk_size=None, eps=1e-12, gamma=None, experiment=None):
         super().__init__(chunk_size=chunk_size, eps=eps, gamma=gamma) # input is divided into chunks of at most chunk_size
         
     def objective(self, x, y):
@@ -111,23 +111,23 @@ class NormalizedCuts(AbstractDeclarativeNode):
         f(W,y) = y^T * (D-W) * y / y^T * D * y
 
         Arguments:
-            y: (b, c, x, y) Torch tensor,
-                batch, channels of solution tensors
+            y: (b, x, y) Torch tensor,
+                batch of solution tensors
 
-            x: (b, c, N, N) Torch tensor,
-                batch, channels of affinity/weight tensors (N = x * y)        
+            x: (b, N, N) Torch tensor,
+                batch of affinity/weight tensors (N = x * y)        
 
         Return value:
-            objectives: (b, c, x) Torch tensor,
-                batch, channels of objective function evaluations
+            objectives: (b, x) Torch tensor,
+                batch of objective function evaluations
         """
         # x = de_minW(x) # check if needs to be converted from minVer style
-
         y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
         b, N = y.shape
         y = y.reshape(b,1,N) # convert to a col vector
 
-        d = torch.einsum('bij->bj', x) # eqv to x.sum(0) --- d vector
+        # d = torch.einsum('bij->bj', x) # eqv to x.sum(0) --- d vector
+        d = x.sum(1) # 1 because 0 is batch
         D = torch.diag_embed(d) # D = matrix with d on diagonal
 
         L = D-x
@@ -143,43 +143,54 @@ class NormalizedCuts(AbstractDeclarativeNode):
         subject to y^T * D * 1 = 0
 
         Arguments:
-            y: (b, c, x, y) Torch tensor,
-                batch, channels of solution tensors
+            y: (b, x, y) Torch tensor,
+                batch of solution tensors
 
-            x: (b, c, N, N) Torch tensor,
-                batch, channels of affinity/weight tensors (N = x * y)        
+            x: (b, N, N) Torch tensor,
+                batch of affinity/weight tensors (N = x * y)        
 
         Return value:
-            equalities: (b, c, x) Torch tensor,
-                batch, channel of constraint calculation scalars
+            equalities: (b, x) Torch tensor,
+                batch of constraint calculation scalars
         """
         # x = de_minW(x) # check if needs to be converted from minVer style
 
-        y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
-        b, c, N = y.shape
-        y = y.reshape(b,c,1,N) # convert to a col vector (y^T)
+        y = y.flatten(-2)
+        b,N = y.shape
+        y = y.reshape(b,N,1)
+        y = torch.transpose(y, 1, 2)
 
-        d = torch.einsum('bij->bj', x) # eqv to x.sum(0) --- d vector
-        D = torch.diag_embed(d).to(device=y.device) # D = matrix with d on diagonal
-        ONE = torch.ones(b,c,N,1).to(device=y.device) # create a vector of ones
+        d = x.sum(1) # row sum
+        D = torch.diag_embed(d)
+        ONE = torch.ones((b,N,1), dtype=torch.double)
 
-        # MATRIX SIZES (for sanity check)
-        # B,C,1,N
-        # B,C,N,N
-        # = B,C,1,N
-        # B,C,N,1
-        # = B,C,1,1
+        return torch.bmm(torch.bmm(y,D),ONE)
 
-        # return the constraint calculation, squeezed to output size
-        return torch.einsum('bIK,bKJ->bIJ', torch.einsum('bIK,bKJ->bIJ',y, D), ONE).squeeze(-2)
+        # y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
+        # b, N = y.shape
+        # y = y.reshape(b,1,N) # convert to a col vector (y^T)
+
+        # d = torch.einsum('bij->bj', x) # eqv to x.sum(0) --- d vector
+        # D = torch.diag_embed(d).to(device=y.device) # D = matrix with d on diagonal
+        # ONE = torch.ones(b,N,1).to(device=y.device) # create a vector of ones
+
+        # # MATRIX SIZES (for sanity check)
+        # # B,1,N
+        # # B,N,N
+        # # = B,1,N
+        # # B,N,1
+        # # = B,1,1
+
+        # # return the constraint calculation, squeezed to output size
+        # return torch.einsum('bIK,bKJ->bIJ', torch.einsum('bIK,bKJ->bIJ',y, D), ONE).squeeze(-2)
 
     def solve(self, A):
         """ 
         Solve the normalized cuts using eigenvectors (produces single cut, no recursion yet)
 
         Arguments:
-            A: (b, c, N, N) Torch tensor,
-                batch, channels of affinity/weight tensors (N = x * y from orignal x,y images)
+            A: (b, N, N) Torch tensor,
+                batch of affinity/weight tensors (N = x * y from orignal x,y images)
 
         TODO: pass a parameter to avoid hardcoded output dimensions
         """        
