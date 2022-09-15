@@ -19,6 +19,9 @@ class Net(nn.Module):
         self.decl = DeclarativeLayer(self.nc).to(device) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
         self.postNC = PostNC(args).to(device)
 
+        self.n_channels = args.n_channels
+        self.n_classes = args.n_classes
+
     def forward(self, x):
         x = self.weightsNet(x) # make the affinity matrix (or something else that works with)
         x = self.decl(x) # check the size of this output...
@@ -42,6 +45,9 @@ class WeightsNet(nn.Module):
         self.min = args.minify
         self.net_no = args.network
         self.last_dim = args.img_size[0] * args.img_size[1]
+
+        self.n_channels = args.n_channels
+        self.n_classes = args.n_classes
 
         # TODO: add a channels field for forward(...), but currently only training B/W images
         # TODO: add args for these (not worried until everything works flawlessly)
