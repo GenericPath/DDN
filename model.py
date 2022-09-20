@@ -78,6 +78,9 @@ class WeightsNet(nn.Module):
         self.restrict = nn.ReLU()
 
     def forward(self, x):
+        if len(x.shape) == 3:
+            x = x[None,:]
+
         for layer in self.layers:
             x = layer(x)
         x = self.lastcnn(x)
