@@ -181,7 +181,7 @@ if __name__ == '__main__':
         img_size = (16,16),
 
         # NOT USED YET
-        optim='adam',
+        optim='sgd',
         shuffle=True,
 
         # whether to have a network at the end
