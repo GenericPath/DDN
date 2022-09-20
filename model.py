@@ -19,6 +19,8 @@ class Net(nn.Module):
         self.nc = NormalizedCuts(eps=args.eps, gamma=args.gamma, bipart=args.bipart) # eps sets the absolute difference between objective solutions and 0
         self.decl = DeclarativeLayer(self.nc).to(device) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
         
+
+        self.minify = args.minify
         self.post_net = args.post_net
         self.experiment = experiment
         
@@ -29,10 +31,13 @@ class Net(nn.Module):
     def forward(self, x):
         x = self.weightsNet(x) # make the affinity matrix (or something else that works with)
 
-        if self.experiment is not None:
-            self.experiment.log({
-                            'weights[0]': wandb.Image(x[0].cpu()),
-                        })
+        if not self.minify:
+            x = torch.bmm(x, x.mT) # make it symmetric
+
+        # if self.experiment is not None:
+        #     self.experiment.log({
+        #                     'weights[0]': wandb.Image(x[0].cpu()),
+        #                 })
         x = self.decl(x) # check the size of this output...
         if self.post_net:
             x = self.postNC(x)

@@ -118,6 +118,9 @@ def train_net(net, args, experiment, save_checkpoint = True):
                         val_score = evaluate(net, val_loader, device)
                         scheduler.step(val_score)
 
+                        # partition = (torch.sigmoid(mask_pred) > 0.5).double()
+                        # log this instead?
+
                         logging.info('Validation Dice score: {}'.format(val_score))
                         experiment.log({
                             'learning rate': optimizer.param_groups[0]['lr'],
@@ -171,7 +174,7 @@ if __name__ == '__main__':
         bilinear = True, # Use bilinear upsampling
 
         net='DDN',
-        minify=True,
+        minify=False,
         radius=20,
         eqconst=False,
         eps=1e-4,
