@@ -143,7 +143,7 @@ if __name__ == '__main__':
     # Default parameters
     hyperparameter_defaults = dict(
         epochs=10, 
-        batch_size = 20,
+        batch_size = 50,
 
         lr = 1e-4, # will lower during training
         weight_decay=1e-8,
