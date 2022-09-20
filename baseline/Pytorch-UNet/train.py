@@ -124,7 +124,7 @@ def train_net(net, args, experiment, save_checkpoint = True):
                             'validation Dice': val_score,
                             'images': wandb.Image(images[0].cpu()),
                             'weights' : wandb.Image(net.weightsNet(images[0][None,:]).float().cpu()),
-                            'objective' : test_node.objective(images[0][None,:].cpu(), masks_pred[0][None,:].float()),
+                            # 'objective' : test_node.objective(images[0][None,:].cpu(), masks_pred[0][None,:].float()),
                             'masks': {
                                 'true': wandb.Image(true_masks[0].float().cpu()),
                                 'pred': wandb.Image(masks_pred[0].float().cpu()),
