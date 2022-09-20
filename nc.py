@@ -266,19 +266,19 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         L = D-A # Laplacian matrix
         # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
         L_norm = torch.einsum('...ij,...jk->...ik', torch.einsum('...ij,...jk->...ik', D_inv_sqrt , L) , D_inv_sqrt)
-        L_norm = L_norm.to(A.device) # TODO : more elegant fix?
+        # L_norm = L_norm.to(A.device) # TODO : more elegant fix?
 
         # Solve eigenvectors and eigenvalues
-        (w, v) = torch.linalg.eigh(L_norm)
+        (w, v) = torch.linalg.eigh(L_norm.cpu())
         
         # Returns the second smallest eigenvector
-        output = v[:,:,1,None].reshape(output_size).requires_grad_(True)
+        output = v[:,:,1,None].reshape(output_size)
         # DNN NOTE: Detach inputs from graph, attach only the output (or if using optimisation to solve you can with torch.enable_grad() ( ... optim ))
         
         if self.bipart:
             output = partition(output)
         
-        return output, None
+        return output.to(A.device).requires_grad_(True), None
     
     def test(self, x, y):
         """ Test gradient """
