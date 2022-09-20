@@ -19,6 +19,7 @@ from unet import UNet
 import sys
 sys.path.append("../..")
 from model import Net as DDNNet
+from nc import NormalizedCuts
 from model import WeightsNet
 
 dir_checkpoint = Path('../../data/tc/')
@@ -38,11 +39,14 @@ def train_net(net, args, experiment, save_checkpoint = True):
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(args.seed))
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=args.batch_size, num_workers=4, pin_memory=True)
+    loader_args = dict(batch_size=args.batch_size, pin_memory=True) #, num_workers=4. currently without so not multithreaded for debug
     train_loader = DataLoader(train_set, shuffle=args.shuffle, drop_last=True,**loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
+    test_node = NormalizedCuts()
+
     logging.info(f'''Starting training:
+        Net:             {args.net}
         Epochs:          {args.epochs}
         Batch size:      {args.batch_size}
         Learning rate:   {args.lr}
@@ -56,12 +60,14 @@ def train_net(net, args, experiment, save_checkpoint = True):
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     if args.optim == 'sgd':
-        optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum)
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum, maximize=True)
+    elif args.optim == 'adam':
+        optimizer = optim.adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay, maximize=True)
     else:
         raise Exception(f'Optimizer not supported - {args.optim}')
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=args.patience)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCEWithLogitsLoss()
     global_step = 0
 
     # 5. Begin training
@@ -71,17 +77,18 @@ def train_net(net, args, experiment, save_checkpoint = True):
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{args.epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
-                true_masks = batch['mask']
+                true_masks = batch['mask']/255
 
-                images = images.to(device=device, dtype=torch.float32)
-                true_masks = true_masks.to(device=device, dtype=torch.long) # for one hot encoding
+                images = images.to(device=device, dtype=torch.double)
+                true_masks = true_masks.to(device=device, dtype=torch.double)
 
                 with torch.cuda.amp.autocast(enabled=args.amp):
                     masks_pred = net(images)
-                    loss = criterion(masks_pred, true_masks) \
-                           + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                       F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
-                                       multiclass=True)
+
+                    loss = criterion(masks_pred.float(), true_masks.float())
+                    # dice = dice_loss(masks_pred, true_masks)
+                    # bce = criterion(masks_pred, true_masks)
+                    # loss = bce * args.bce_weight + dice * (1 - args.bce_weight)
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -116,9 +123,11 @@ def train_net(net, args, experiment, save_checkpoint = True):
                             'learning rate': optimizer.param_groups[0]['lr'],
                             'validation Dice': val_score,
                             'images': wandb.Image(images[0].cpu()),
+                            'weights' : wandb.Image(net.weightsNet(images[0].cpu()).float()),
+                            'objective' : test_node.objective(images[0].cpu(), masks_pred[0].float()),
                             'masks': {
                                 'true': wandb.Image(true_masks[0].float().cpu()),
-                                'pred': wandb.Image(masks_pred.argmax(dim=1)[0].float().cpu()),
+                                'pred': wandb.Image(masks_pred[0].float().cpu()),
                             },
                             'step': global_step,
                             'epoch': epoch,
@@ -134,22 +143,22 @@ if __name__ == '__main__':
     # Default parameters
     hyperparameter_defaults = dict(
         epochs=10, 
-        batch_size = 5,
+        batch_size = 20,
 
         lr = 1e-4, # will lower during training
         weight_decay=1e-8,
         momentum=0.9,
         patience=2,
 
-        # dir_img='tc/img/', # defaults to data/ + data_path
-        # dir_mask='tc/maskC', # same as above
+        # dir_img='1sample', # defaults to data/ + data_path
+        # dir_mask='1sample', # same as above
 
         dir_img = 'simple01/16-16/images',
         dir_mask = 'simple01/16-16/images',
 
-        val=10.0, # Percent of the data that is used as validation (0-100)
+        val=0, # Percent of the data that is used as validation (0-100)
 
-        n_classes=2, # Number of classes
+        n_classes=1, # Number of classes
         n_channels=3, # 3 for RGB inputs
 
         seed=0,
@@ -163,19 +172,25 @@ if __name__ == '__main__':
 
         net='DDN',
         minify=True,
-        radius=10,
-        eqconst=True,
+        radius=20,
+        eqconst=False,
         eps=1e-4,
-        gamma=1,
+        gamma=0,
         net_size_weights=[1,4,8,4],
         net_size_post=[1,4,8,4],
-        img_size = [16,16],
+        img_size = (16,16),
 
         # NOT USED YET
-        optim='sgd',
-        shuffle=True
+        optim='adam',
+        shuffle=True,
 
-    )
+        # whether to have a network at the end
+        post_net =False,
+        # whether to default partion the outputs
+        bipart = False, # would make the output not a smooth function and thus gradients would be useless
+
+        bce_weight = 0.5,
+)
 
     experiment = wandb.init(project='DDN-NC', config=hyperparameter_defaults)
     # Config parameters are automatically set by W&B sweep agent
@@ -187,7 +202,7 @@ if __name__ == '__main__':
 
     if args.net == 'DDN':
         args.network = 0
-        net = DDNNet(args)
+        net = DDNNet(args).double()
     elif args.net == 'DDN-weights':
         args.network = 1
         net = WeightsNet(args)
