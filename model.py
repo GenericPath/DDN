@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import wandb
 
 # local imports
 from nc import NormalizedCuts, de_minW
@@ -9,23 +10,32 @@ class Net(nn.Module):
     """
     WeightsNet -> NC -> PostNC
     """
-    def __init__(self, args):
+    def __init__(self, args, experiment=None):
         super(Net, self).__init__()
         # enforce the weights being on the same device
         device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
         # the actual layers (nc is placed into dec layer to convert to general pytorch layer)
         self.weightsNet = WeightsNet(args).to(device)
-        self.nc = NormalizedCuts(eps=args.eps, gamma=args.gamma) # eps sets the absolute difference between objective solutions and 0
+        self.nc = NormalizedCuts(eps=args.eps, gamma=args.gamma, bipart=args.bipart) # eps sets the absolute difference between objective solutions and 0
         self.decl = DeclarativeLayer(self.nc).to(device) # converts the NC into a pytorch layer (forward/backward instead of solve/gradient)
+        
+        self.post_net = args.post_net
+        self.experiment = experiment
+        
         self.postNC = PostNC(args).to(device)
-
         self.n_channels = args.n_channels
         self.n_classes = args.n_classes
 
     def forward(self, x):
         x = self.weightsNet(x) # make the affinity matrix (or something else that works with)
+
+        if self.experiment is not None:
+            self.experiment.log({
+                            'weights[0]': wandb.Image(x[0].cpu()),
+                        })
         x = self.decl(x) # check the size of this output...
-        x = self.postNC(x)
+        if self.post_net:
+            x = self.postNC(x)
         return x
 
     def forward_plot(self,x):
@@ -77,6 +87,7 @@ class WeightsNet(nn.Module):
         x = x.view(x.size(0), self.last_size, self.last_dim)
         if self.net_no == 0: # Passes into NC node by converting to full
             x = de_minW(x)
+            # TODO: multiple by transpose to make symmetric
         return x
 
     def conv_block(self, c_in, c_out, **kwargs):
@@ -91,7 +102,6 @@ class WeightsNet(nn.Module):
 class PostNC(nn.Module):
     def __init__(self, args):
         super(PostNC, self).__init__()
-        self.args = args
         self.img_size = args.img_size
 
         # TODO: add a channels field for forward(...), but currently only training B/W images

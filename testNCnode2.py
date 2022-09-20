@@ -7,6 +7,7 @@ import torch.linalg
 from torch.autograd import grad
 
 import scipy.linalg
+import scipy.sparse
 import torch.nn.functional as F
 
 # TODO: https://math.stackexchange.com/questions/3853424/what-does-the-value-of-eigenvectors-of-a-graph-laplacian-matrix-mean#comment7950799_3853794
@@ -56,7 +57,7 @@ args = net_argparser(ipynb=True)
 args.network = 1
 args.total_images = 3
 args.minify = False
-args.radius = 30
+args.radius = 100
 args.img_size = [16,16] # the default is 32,32 anyway
 
 train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
@@ -75,11 +76,15 @@ if True:
     A = A.type(torch.double)
 
 
+    A_p = torch.where(A == 0, 1e-5, A)
+    d_p = A_p.sum(1)
+    D_p = torch.diag_embed(d_p)
+
     # can also replace bc with ...
     d = torch.einsum('bij->bj', A) # eqv to A.sum(0) --- d vector
     D = torch.diag_embed(d) # D = matrix with d on diagonal
     D_inv_sqrt = torch.diag_embed(d.pow(-0.5))
-    D_pinv = torch.linalg.pinv(D, hermitian=True)
+    D_pinv = torch.linalg.pinv(D_p, hermitian=True)
 
 
 
@@ -95,6 +100,25 @@ if True:
         _, a = torch.linalg.eigh(L)
         _, b = torch.linalg.eigh(L_norm)
         _, c = torch.linalg.eigh(L_norm_p)
+
+
+
+        W = A[0].detach().numpy()
+
+        L_1 = scipy.sparse.csgraph.laplacian(W, symmetrized=True, form="lo")  
+        L_2 = scipy.sparse.csgraph.laplacian(W, normed=True, symmetrized=True, form="lo")        
+      
+        rng = np.random.default_rng()
+
+
+        X = rng.random((x, 2))
+        Y = np.ones((x, 1))
+
+        _, eves_1 = scipy.sparse.linalg.lobpcg(L_1, X, Y=Y, largest=False, tol=1e-3)
+        eves_1 *= np.sign(eves_1[0, 0])
+
+        _, eves_2 = scipy.sparse.linalg.lobpcg(L_2, X, Y=Y, largest=False, tol=1e-3)
+        eves_2 *= np.sign(eves_2[0, 0])
 
 
     else:
@@ -187,6 +211,8 @@ else:
         'L'         : a[:,:,0,None].reshape(output_size),
         'L_norm'    : b[:,:,0,None].reshape(output_size),
         'L_norm_p'  : c[:,:,0,None].reshape(output_size),
+        'new-scipy_1' : torch.tensor(eves_1[:,0]).reshape(output_size),
+        'new-scipy_2' : torch.tensor(eves_2[:,0]).reshape(output_size),
     }
 
     for key, value in eigs.copy().items():

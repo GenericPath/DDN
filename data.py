@@ -57,8 +57,8 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
     
     # TODO : use https://pytorch.org/vision/main/auto_examples/plot_visualization_utils.html instead?
     # settings
-    N = min(map(len, images)) # length of the shortest array
-    nrows, ncols = N, len(images)  # array of sub-plots
+    N = max(map(len, images)) # length of the shortest array
+    nrows, ncols = len(images), N  # array of sub-plots
 
     # create figure (fig), and array of axes (ax)
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize, squeeze=False)
@@ -67,13 +67,20 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
     # plot image on each sub-plot
     for i, row_ax in enumerate(ax): # could flatten if not explicitly doing in pairs (ax.flat)
         for j in range(ncols):
-            img = images[j][i]
+            if len(images[i]) <= j:
+                row_ax[j].axis('off')
+                continue
+
+            img = images[i][j]
             img = F.to_pil_image(img)
             row_ax[j].imshow(np.asarray(img), cmap=plt.get_cmap(cmap_name))
 
             # useful labels include the calculated accuracy or losses...
             if labels is not None:
-                row_ax[j].set_title(str(labels[j]))
+                if isinstance(labels[0], list):
+                    row_ax[j].set_title(str(labels[i][j]))
+                else:
+                    row_ax[j].set_title(str(labels[j]))
 
     plt.tight_layout()
     if not ipynb:

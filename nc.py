@@ -7,6 +7,36 @@ from node import *
 
 # NOTE: for all einsums, b/bc could be replaced with an ellipse ...
 
+def partition(eigenvectors):
+    """
+    eigenvectors : (b, x, y)
+    for dim = (x,y)
+    """
+    b,x,y = eigenvectors.shape
+
+    output = []
+
+    # eigenvectors = F.normalize(eigenvectors)
+
+    for i in range(b):
+        eigenvec = torch.clone(eigenvectors[i]).flatten()
+
+        # Using average point to compute bipartition 
+        second_smallest_vec = eigenvectors[i].flatten()
+        avg = torch.sum(second_smallest_vec).item() / torch.numel(second_smallest_vec)
+
+        bipartition = second_smallest_vec > avg
+        seed = torch.argmax(torch.abs(second_smallest_vec))
+
+        if bipartition[seed] != 1:
+            eigenvec = eigenvec * -1
+            bipartition = torch.logical_not(bipartition)
+        bipartition = bipartition.reshape(x, y).type(torch.double)
+        
+        output.append(bipartition)
+    # output.
+    return torch.stack(output)
+
 def manual_weight(name, r=1, minVer=False):
     """
     I = Image name
@@ -96,15 +126,17 @@ def de_minW(out):
 def check_symmetric(a, rtol=1e-05, atol=1e-08): # defaults of allclose
     return torch.allclose(a, a.transpose(-2,-1), rtol, atol)
 
-class NormalizedCuts(EqConstDeclarativeNode): # AbstractDeclarativeNode vs EqConstDeclarativeNode
+class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqConstDeclarativeNode
     """
     A declarative node to embed Normalized Cuts into a Neural Network
     
     Normalized Cuts and Image Segmentation https://people.eecs.berkeley.edu/~malik/papers/SM-ncut.pdf
     Shi, J., & Malik, J. (2000)
     """
-    def __init__(self, chunk_size=None, eps=1e-12, gamma=None, experiment=None):
+    def __init__(self, chunk_size=None, eps=1e-8, gamma=None, experiment=None, bipart=True):
         super().__init__(chunk_size=chunk_size, eps=eps, gamma=gamma) # input is divided into chunks of at most chunk_size
+        self.experiment = experiment
+        self.bipart = bipart
         
     def objective(self, x, y):
         """
@@ -122,7 +154,7 @@ class NormalizedCuts(EqConstDeclarativeNode): # AbstractDeclarativeNode vs EqCon
                 batch of objective function evaluations
         """
         # x = de_minW(x) # check if needs to be converted from minVer style
-        y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
+        y = y.flatten(-2) # converts to the vector with shape = (b, 1, N) 
         b, N = y.shape
         y = y.reshape(b,1,N) # convert to a col vector
 
@@ -132,10 +164,30 @@ class NormalizedCuts(EqConstDeclarativeNode): # AbstractDeclarativeNode vs EqCon
 
         L = D-x
 
-        return torch.div( # TODO: fix this
+        objective_output = torch.div(
             torch.einsum('bij,bkj->bik', torch.einsum('bij,bkj->bik', y, L), y),
             torch.einsum('bij,bkj->bik', torch.einsum('bij,bkj->bik', y, D), y)
         ).squeeze(-2)
+
+        # if self.experiment is not None:
+        #     self.experiment.log({
+
+        #     })
+
+            # experiment.log({
+            #                 'learning rate': optimizer.param_groups[0]['lr'],
+            #                 'validation Dice': val_score,
+            #                 'images': wandb.Image(images[0].cpu()),
+            #                 'masks': {
+            #                     'true': wandb.Image(true_masks[0].float().cpu()),
+            #                     'pred': wandb.Image(masks_pred.argmax(dim=1)[0].float().cpu()),
+            #                 },
+            #                 'step': global_step,
+            #                 'epoch': epoch,
+            #                 # **histograms
+            #             })
+
+        return objective_output
 
     
     def equality_constraints(self, x, y):
@@ -157,8 +209,8 @@ class NormalizedCuts(EqConstDeclarativeNode): # AbstractDeclarativeNode vs EqCon
 
         y = y.flatten(-2)
         b,N = y.shape
-        y = y.reshape(b,N,1)
-        y = torch.transpose(y, 1, 2)
+        y = y.reshape(b,1,N) # does the same as extending and tranposing
+        # y = torch.transpose(y, 1, 2)
 
         d = x.sum(1) # row sum
         D = torch.diag_embed(d)
@@ -222,6 +274,10 @@ class NormalizedCuts(EqConstDeclarativeNode): # AbstractDeclarativeNode vs EqCon
         # Returns the second smallest eigenvector
         output = v[:,:,1,None].reshape(output_size).requires_grad_(True)
         # DNN NOTE: Detach inputs from graph, attach only the output (or if using optimisation to solve you can with torch.enable_grad() ( ... optim ))
+        
+        if self.bipart:
+            output = partition(output)
+        
         return output, None
     
     def test(self, x, y):

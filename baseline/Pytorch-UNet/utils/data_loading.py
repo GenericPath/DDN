@@ -75,8 +75,8 @@ class BasicDataset(Dataset):
         #     mask = self.transform(mask)            
 
         return {
-            'image': torch.as_tensor(img.copy()).float().contiguous(),
-            'mask': torch.as_tensor(mask.copy()).long().contiguous()
+            'image': torch.as_tensor(img.copy(), dtype=torch.double).contiguous(),
+            'mask': torch.as_tensor(mask.copy(), dtype=torch.int16).contiguous()
             # 'image': img,
             # 'mask': mask.long().contiguous()
         }
