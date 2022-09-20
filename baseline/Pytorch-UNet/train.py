@@ -60,12 +60,12 @@ def train_net(net, args, experiment, save_checkpoint = True):
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     if args.optim == 'sgd':
-        optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum, maximize=True)
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum)
     elif args.optim == 'adam':
-        optimizer = optim.adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay, maximize=True)
+        optimizer = optim.adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     else:
         raise Exception(f'Optimizer not supported - {args.optim}')
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=args.patience)  # goal: maximize Dice score
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=args.patience)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
     criterion = nn.BCEWithLogitsLoss()
     global_step = 0
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     # Default parameters
     hyperparameter_defaults = dict(
         epochs=10, 
-        batch_size = 50,
+        batch_size = 100,
 
         lr = 1e-4, # will lower during training
         weight_decay=1e-8,
