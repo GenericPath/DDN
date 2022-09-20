@@ -19,7 +19,7 @@ from unet import UNet
 import sys
 sys.path.append("../..")
 from model import Net as DDNNet
-from nc import NormalizedCuts
+from nc import NormalizedCuts, de_minW
 from model import WeightsNet
 
 dir_checkpoint = Path('../../data/tc/')
@@ -123,7 +123,7 @@ def train_net(net, args, experiment, save_checkpoint = True):
                             'learning rate': optimizer.param_groups[0]['lr'],
                             'validation Dice': val_score,
                             'images': wandb.Image(images[0].cpu()),
-                            'weights' : wandb.Image(net.weightsNet(images[0][None,:]).float().cpu()),
+                            'weights' : wandb.Image(de_minW(net.weightsNet(images[0][None,:])).float().cpu()),
                             # 'objective' : test_node.objective(images[0][None,:].cpu(), masks_pred[0][None,:].float()),
                             'masks': {
                                 'true': wandb.Image(true_masks[0].float().cpu()),
