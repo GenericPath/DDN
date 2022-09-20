@@ -123,7 +123,7 @@ def train_net(net, args, experiment, save_checkpoint = True):
                             'learning rate': optimizer.param_groups[0]['lr'],
                             'validation Dice': val_score,
                             'images': wandb.Image(images[0].cpu()),
-                            'weights' : wandb.Image(net.weightsNet(images[0].cpu()).float()),
+                            'weights' : wandb.Image(net.weightsNet(images[0]).float().cpu()),
                             'objective' : test_node.objective(images[0].cpu(), masks_pred[0].float()),
                             'masks': {
                                 'true': wandb.Image(true_masks[0].float().cpu()),
