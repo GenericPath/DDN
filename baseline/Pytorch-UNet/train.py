@@ -145,13 +145,13 @@ def train_net(net, args, experiment, save_checkpoint = True):
 if __name__ == '__main__':
     # Default parameters
     hyperparameter_defaults = dict(
-        epochs=10, 
-        batch_size = 10,
+        epochs=50, 
+        batch_size = 50,
 
         lr = 1e-4, # will lower during training
         weight_decay=1e-8,
         momentum=0.9,
-        patience=2,
+        patience=5,
 
         # dir_img='1sample', # defaults to data/ + data_path
         # dir_mask='1sample', # same as above
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         dir_img = 'simple01/16-16/images',
         dir_mask = 'simple01/16-16/images',
 
-        val=0, # Percent of the data that is used as validation (0-100)
+        val=10, # Percent of the data that is used as validation (0-100)
 
         n_classes=1, # Number of classes
         n_channels=3, # 3 for RGB inputs
@@ -174,12 +174,12 @@ if __name__ == '__main__':
         bilinear = True, # Use bilinear upsampling
 
         net='DDN',
-        minify=False,
-        radius=20,
+        minify=True,
+        radius=40,
         eqconst=False,
         eps=1e-4,
-        gamma=0,
-        net_size_weights=[1,4,8,4],
+        gamma=1e-4,
+        net_size_weights=[1,8,8,4],
         net_size_post=[1,4,8,4],
         img_size = (16,16),
 
