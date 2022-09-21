@@ -133,10 +133,11 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
     Normalized Cuts and Image Segmentation https://people.eecs.berkeley.edu/~malik/papers/SM-ncut.pdf
     Shi, J., & Malik, J. (2000)
     """
-    def __init__(self, chunk_size=None, eps=1e-8, gamma=None, experiment=None, bipart=True):
+    def __init__(self, chunk_size=None, eps=1e-8, gamma=None, experiment=None, bipart=True, symm_norm_L=False):
         super().__init__(chunk_size=chunk_size, eps=eps, gamma=gamma) # input is divided into chunks of at most chunk_size
         self.experiment = experiment
         self.bipart = bipart
+        self.symm_norm_L = symm_norm_L
         
     def objective(self, x, y):
         """
@@ -162,7 +163,7 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         d = x.sum(1) # 1 because 0 is batch
         D = torch.diag_embed(d) # D = matrix with d on diagonal
 
-        L = D-x
+        L = D-x # TODO: check does this need to be symmetric too?
 
         objective_output = torch.div(
             torch.einsum('bij,bkj->bik', torch.einsum('bij,bkj->bik', y, L), y),
@@ -264,9 +265,13 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         D_inv_sqrt = torch.diag_embed(d.pow(-0.5)) # previously had pow inside diag
 
         L = D-A # Laplacian matrix
-        # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
-        L_norm = torch.einsum('...ij,...jk->...ik', torch.einsum('...ij,...jk->...ik', D_inv_sqrt , L) , D_inv_sqrt)
-        # L_norm = L_norm.to(A.device) # TODO : more elegant fix?
+
+        if self.symm_norm_L:
+            # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
+            L_norm = torch.einsum('...ij,...jk->...ik', torch.einsum('...ij,...jk->...ik', D_inv_sqrt , L) , D_inv_sqrt)
+            # L_norm = L_norm.to(A.device) # TODO : more elegant fix?
+        else:
+            L_norm = L
 
         # Solve eigenvectors and eigenvalues
         (w, v) = torch.linalg.eigh(L_norm.cpu())

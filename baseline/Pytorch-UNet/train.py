@@ -193,6 +193,8 @@ if __name__ == '__main__':
         bipart = False, # would make the output not a smooth function and thus gradients would be useless
 
         bce_weight = 0.5,
+
+        symm_norm_L = False,
 )
 
     experiment = wandb.init(project='DDN-NC', config=hyperparameter_defaults)
