@@ -185,7 +185,7 @@ if __name__ == '__main__':
 
         # NOT USED YET
         optim='sgd',
-        shuffle=True,
+        shuffle=False,
 
         # whether to have a network at the end
         post_net =False,
