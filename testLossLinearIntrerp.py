@@ -14,6 +14,8 @@ args = net_argparser(ipynb=True)
 args.network = 1
 args.total_images = 1
 args.minify = False
+args.bipart = False
+args.symm_norm_L = False
 args.radius = 100
 args.img_size = [16,16] # the default is 32,32 anyway
 
@@ -22,9 +24,9 @@ train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
 true = train_dataset.get_segmentation(0)
 W_true = train_dataset.get_weights(0)
 
-node = NormalizedCuts(eps=1e-3)
+node = NormalizedCuts(eps=1e-3, bipart=args.bipart, symm_norm_L=args.symm_norm_L)
 
-random_count = 10
+random_count = 3
 steps = 100
 criterion = nn.BCEWithLogitsLoss()
 
@@ -49,4 +51,4 @@ x = np.linspace(0, steps, steps)
 for j in range(random_count):
     plt.plot(x,losses[j], label= f'run {j}')
 
-plt.savefig('test1.png')
+plt.savefig(f'experiments/test-bipart{args.bipart}-symm_L{args.symm_norm_L}-r{args.radius}-minify{args.minify}.png')
