@@ -25,43 +25,46 @@ def lech_loss(pred, mask):
     # mask should be in format {-1, 1} ideally
     # mask_bar is {0,1} for regression style problem
 
-    # mask = mask.flatten(-2)
-    # pred = pred.flatten(-2)
+    mask = mask.flatten(-2)[:,None,:]
+    pred = pred.flatten(-2)[:,:,None]
 
     mask_bar = torch.div((mask+1),2) # y_n
     pred_bar = torch.div((pred+1), 2) # yhat_n convert predicition to {0,1} roughly too
-
+    relu = nn.ReLU()
     # TODO:
-    # verify if pred_bar is used for pred
-    # and otherwise checking everything is all good!
+    # 1. verify if pred_bar is used for pred
+    # 2. see if i need to flatten (shouldnt as it should broadcast correctly?)
+    # 3. and otherwise checking everything is all good!
 
-    loss = torch.bmm((1-mask_bar),(pred_bar+1)**2) + torch.bmm(mask_bar, nn.ReLU(-pred_bar))
-
-
-    return loss
+    loss = torch.bmm((1-mask_bar),(pred_bar+1)**2) + torch.bmm(mask_bar, relu(-pred_bar))
+    return loss/mask.shape[0] # avg across batch I guess
 
 args = net_argparser(ipynb=True)
 args.network = 1
 args.total_images = 1
-args.minify = False
-args.bipart = False
-args.symm_norm_L = False
+args.minify = False # TODO: test for this working properly
+args.bipart = False # Obviously will make it a non-continuous function
+args.symm_norm_L = False # TODO: test for this maybe? probably just leave off...
 args.radius = 100
 args.img_size = [16,16] # the default is 32,32 anyway
 
 train_dataset = SimpleDatasets(args, transform=transforms.ToTensor())
 
 true = train_dataset.get_segmentation(0)
-W_true = train_dataset.get_weights(0)
+true[true > 0] = 1
+true[true <= 0] = -1
+# convert true to the expectation {-1,1} instead of 0,1?
+
+
+W_true = train_dataset.get_weights(0).double()
 
 node = NormalizedCuts(eps=1e-3, bipart=args.bipart, symm_norm_L=args.symm_norm_L)
 
 random_count = 3
 steps = 100
 lerp_weight = 0.05
-criterion = nn.BCEWithLogitsLoss()
+criterion = lech_loss #nn.BCEWithLogitsLoss()
 
-# temp = node.solve(W_true)[0]
 losses_2 = []
 for j in range(random_count):
     this_losses2 = []
@@ -76,13 +79,16 @@ for j in range(random_count):
 x = np.linspace(0, steps, steps)
 for j in range(random_count):
     plt.plot(x,losses_2[j])
-plt.savefig('experiments/test-lerpoutput.png')
+name = 'experiments/test-lerpoutput.png'
+plt.savefig(name)
+print(f'saved {name}')
+plt.close()
 
 losses = []
 plots = []
 labels = []
 for j in range(random_count):
-    W_rand = torch.randn_like(W_true) 
+    W_rand = torch.randn_like(W_true, dtype=torch.double) 
 
     W_rand_symm = W_rand.clone()
     W_rand_symm = torch.tril(W_rand_symm) + torch.tril(W_rand_symm,-1).mT  
@@ -124,11 +130,12 @@ for j in range(random_count):
     plt.plot(x,losses[j], label= f'run {j}')
 
 
-basic = True
+basic = False
 if basic:
     second_fig_name = 'experiments/test-loss.png'
 else:
     second_fig_name = 'experiments/test-lech.png'
-    plt.title('bipart{args.bipart}-symm_L{args.symm_norm_L}-r{args.radius}-minify{args.minify}')
+    plt.title(f'bipart{args.bipart}-symm_L{args.symm_norm_L}-r{args.radius}-minify{args.minify}')
 plt.savefig(second_fig_name)
+plt.close()
 print(f'saved {second_fig_name}')
