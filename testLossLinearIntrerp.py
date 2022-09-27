@@ -80,7 +80,7 @@ for j in range(random_count):
         if j == 0 and i % (steps/10) == 0:
         # if i % (steps/10) == 0:
             plots.append([pred, in_between, pred_symm, in_between_symm, W_true])
-            labels.append([f'{node.objective(in_between, pred).item():.5f}\nmin{torch.min(pred)}-max{torch.max(pred)}', 'noise', f'{node.objective(in_between_symm, pred_symm).item():.5f}\nmin{torch.min(pred_symm)}-max{torch.max(pred_symm)}','symm', f'{i}'])
+            labels.append([f'{node.objective(in_between, pred).item():.5f}\nmin{torch.min(pred):.2f} max{torch.max(pred):.2f}', 'noise', f'{node.objective(in_between_symm, pred_symm).item():.5f}\nmin{torch.min(pred_symm):.2f} max{torch.max(pred_symm):.2f}','symm', f'{i}'])
 
         if i == steps:
             continue
