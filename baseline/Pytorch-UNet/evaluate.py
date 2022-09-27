@@ -5,9 +5,11 @@ from tqdm import tqdm
 
 from utils.dice_score import multiclass_dice_coeff, dice_coeff
 
-from nc import partition
 from train import lech_loss
 
+import sys
+sys.path.append("../..")
+from nc import partition
 
 def evaluate(net, dataloader, device):
     net.eval()
