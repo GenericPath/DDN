@@ -45,7 +45,7 @@ def lech_loss(pred, mask):
 args = net_argparser(ipynb=True)
 args.network = 1
 args.total_images = 1
-args.minify = False # TODO: test for this working properly
+args.minify = True # TODO: test for this working properly
 args.bipart = False # Obviously will make it a non-continuous function
 args.symm_norm_L = False # TODO: test for this maybe? probably just leave off...
 args.radius = 100
@@ -93,16 +93,20 @@ labels = []
 for j in range(random_count):
     W_rand = torch.randn_like(W_true, dtype=torch.double) 
 
-    W_rand_symm = W_rand.clone()
-    W_rand_symm = torch.tril(W_rand_symm) + torch.tril(W_rand_symm,-1).mT  
-
     this_loss = []
     in_between = W_rand
-    in_between_symm = W_rand_symm
+    if not args.minify:
+        W_rand_symm = W_rand.clone()
+        W_rand_symm = torch.tril(W_rand_symm) + torch.tril(W_rand_symm,-1).mT  
+
+        in_between_symm = W_rand_symm
+    else:
+        in_between_symm = W_rand
     for i in range(0,steps+1):
         in_between = torch.lerp(in_between, W_true, lerp_weight)
-        in_between_symm = torch.lerp(in_between_symm, W_true, lerp_weight)
-        in_between_symm = torch.div((in_between_symm + in_between_symm.mT), 2)
+        if not args.minify:
+            in_between_symm = torch.lerp(in_between_symm, (W_true + W_true.mT)/2, lerp_weight)
+            in_between_symm = (in_between_symm + in_between_symm.mT) / 2
 
         if i == steps:
             in_between = W_true
@@ -121,7 +125,7 @@ for j in range(random_count):
 
         # loss = lech_loss(true, pred)
 
-        loss = criterion(pred, true)
+        loss = criterion(pred.double(), true.double())
         this_loss.append(loss.item())
     losses.append(this_loss)
 
