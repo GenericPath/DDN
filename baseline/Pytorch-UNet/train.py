@@ -177,7 +177,7 @@ if __name__ == '__main__':
     # Default parameters
     hyperparameter_defaults = dict(
         epochs=50, 
-        batch_size = 5,
+        batch_size = 20,
 
         lr = 1e-4, # will lower during training
         weight_decay=1e-8,
@@ -190,7 +190,7 @@ if __name__ == '__main__':
         dir_img = 'simple01/16-16/images',
         dir_mask = 'simple01/16-16/images',
 
-        val=20, # Percent of the data that is used as validation (0-100)
+        val=10, # Percent of the data that is used as validation (0-100)
 
         n_classes=1, # Number of classes
         n_channels=3, # 3 for RGB inputs
