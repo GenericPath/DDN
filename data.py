@@ -84,6 +84,7 @@ def plot_multiple_images(batch_no, images, dir='experiments/',labels=None, figsi
 
     plt.tight_layout()
     if not ipynb:
+        plt.tight_layout()
         name = dir+str(batch_no)+'.png'
         plt.savefig(name)
         print(f'saved {name}')
@@ -133,7 +134,7 @@ def data(full_path, weights_name, args):
     start = len(images)
     start_weights = len(weights)
 
-    print(f'loaded {start} existing images from dataset')
+    print(f'loaded {start} existing images from dataset of size {img_size}')
     print(f'loaded {start_weights} existing weights from {weights_name}')
 
     # create all the missing weights (as the images may have been created with a different minify or radius)
