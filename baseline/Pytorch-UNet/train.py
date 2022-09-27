@@ -25,6 +25,34 @@ from model import WeightsNet
 dir_checkpoint = Path('../../data/tc/')
 base_path = '../../data/'
 
+def lech_loss(pred, mask):
+    """
+    pred is yhat
+    mask is y
+
+    _bar is -1,b becoming 0,b
+    idealy everything is close to -1,1 actual or 0,1 _bar form
+
+    so instead of classification loss, MSE loss for the application
+    """
+
+    # mask should be in format {-1, 1} ideally
+    # mask_bar is {0,1} for regression style problem
+
+    mask = mask.flatten(-2)[:,None,:]
+    pred = pred.flatten(-2)[:,:,None]
+
+    mask_bar = torch.div((mask+1),2) # y_n
+    pred_bar = torch.div((pred+1), 2) # yhat_n convert predicition to {0,1} roughly too
+    relu = nn.ReLU()
+    # TODO:
+    # 1. verify if pred_bar is used for pred
+    # 2. see if i need to flatten (shouldnt as it should broadcast correctly?)
+    # 3. and otherwise checking everything is all good!
+
+    loss = torch.bmm((1-mask_bar),(pred_bar+1)**2) + torch.bmm(mask_bar, relu(-pred_bar))
+    return torch.mean(loss) # avg across batch I guess
+
 
 def train_net(net, args, experiment, save_checkpoint = True):
 
@@ -67,7 +95,8 @@ def train_net(net, args, experiment, save_checkpoint = True):
         raise Exception(f'Optimizer not supported - {args.optim}')
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=args.patience)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
-    criterion = nn.BCEWithLogitsLoss()
+    # criterion = nn.BCEWithLogitsLoss()
+    criterion = lech_loss
     global_step = 0
 
     # 5. Begin training
@@ -78,6 +107,8 @@ def train_net(net, args, experiment, save_checkpoint = True):
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']/255
+                true_masks[true_masks > 0] = 1
+                true_masks[true_masks <= 0] = -1
 
                 images = images.to(device=device, dtype=torch.double)
                 true_masks = true_masks.to(device=device, dtype=torch.double)
@@ -85,7 +116,7 @@ def train_net(net, args, experiment, save_checkpoint = True):
                 with torch.cuda.amp.autocast(enabled=args.amp):
                     masks_pred = net(images)
 
-                    loss = criterion(masks_pred.float(), true_masks.float())
+                    loss = criterion(masks_pred.double(), true_masks.double())
                     # dice = dice_loss(masks_pred, true_masks)
                     # bce = criterion(masks_pred, true_masks)
                     # loss = bce * args.bce_weight + dice * (1 - args.bce_weight)

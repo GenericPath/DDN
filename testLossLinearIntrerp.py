@@ -37,7 +37,7 @@ def lech_loss(pred, mask):
     # 3. and otherwise checking everything is all good!
 
     loss = torch.bmm((1-mask_bar),(pred_bar+1)**2) + torch.bmm(mask_bar, relu(-pred_bar))
-    return loss/mask.shape[0] # avg across batch I guess
+    return torch.mean(loss) # avg across batch I guess
 
 args = net_argparser(ipynb=True)
 args.network = 1
