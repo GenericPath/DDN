@@ -43,7 +43,8 @@ def lech_loss(pred, mask):
     pred = pred.flatten(-2)[:,:,None]
 
     mask_bar = torch.div((mask+1),2) # y_n
-    pred_bar = torch.div((pred+1), 2) # yhat_n convert predicition to {0,1} roughly too
+    # pred_bar = torch.div((pred+1), 2) # yhat_n convert predicition to {0,1} roughly too
+    pred_bar = pred
     relu = nn.ReLU()
     # TODO:
     # 1. verify if pred_bar is used for pred
