@@ -210,7 +210,7 @@ if __name__ == '__main__':
         radius=100,
         eqconst=False,
         eps=1e-4,
-        gamma=0,
+        gamma=0.9,
         net_size_weights=[1,8,8,4],
         net_size_post=[1,4,8,4],
         img_size = (16,16),
