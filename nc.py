@@ -160,7 +160,7 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         y = y.reshape(b,1,N) # convert to a col vector
 
         # d = torch.einsum('bij->bj', x) # eqv to x.sum(0) --- d vector
-        d = x.sum(1) # 1 because 0 is batch
+        d = x.sum(1, dtype=y.dtype) # 1 because 0 is batch
         D = torch.diag_embed(d) # D = matrix with d on diagonal
 
         L = D-x # TODO: check does this need to be symmetric too?
