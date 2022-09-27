@@ -177,10 +177,10 @@ def train_net(net, args, experiment, save_checkpoint = True):
 if __name__ == '__main__':
     # Default parameters
     hyperparameter_defaults = dict(
-        epochs=50, 
-        batch_size = 20,
+        epochs=10, 
+        batch_size = 50,
 
-        lr = 1e-4, # will lower during training
+        lr = 1e-2, # will lower during training
         weight_decay=1e-8,
         momentum=0.9,
         patience=5,
@@ -206,11 +206,11 @@ if __name__ == '__main__':
         bilinear = True, # Use bilinear upsampling
 
         net='DDN',
-        minify=False,
-        radius=40,
+        minify=True,
+        radius=100,
         eqconst=False,
         eps=1e-4,
-        gamma=1e-4,
+        gamma=0,
         net_size_weights=[1,8,8,4],
         net_size_post=[1,4,8,4],
         img_size = (16,16),
