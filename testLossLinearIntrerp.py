@@ -11,26 +11,34 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-# def lech_loss(pred, mask):
-#     """
-#     pred is yhat
-#     mask is y
+def lech_loss(pred, mask):
+    """
+    pred is yhat
+    mask is y
 
-#     _bar is -1,b becoming 0,b
-#     idealy everything is close to -1,1 actual or 0,1 _bar form
+    _bar is -1,b becoming 0,b
+    idealy everything is close to -1,1 actual or 0,1 _bar form
 
-#     so instead of classification loss, MSE loss for the application
-#     """
+    so instead of classification loss, MSE loss for the application
+    """
+
+    # mask should be in format {-1, 1} ideally
+    # mask_bar is {0,1} for regression style problem
+
+    # mask = mask.flatten(-2)
+    # pred = pred.flatten(-2)
+
+    mask_bar = torch.div((mask+1),2) # y_n
+    pred_bar = torch.div((pred+1), 2) # yhat_n convert predicition to {0,1} roughly too
+
+    # TODO:
+    # verify if pred_bar is used for pred
+    # and otherwise checking everything is all good!
+
+    loss = torch.bmm((1-mask_bar),(pred_bar+1)**2) + torch.bmm(mask_bar, nn.ReLU(-pred_bar))
 
 
-
-
-#     y_bar = (y+1)/2
-#     yhat_bar = (yhat+1)/2
-
-#     loss = (1-y_bar)*(1-yhat_bar)**2 + y_bar@(nn.ReLU(-yhat_bar))
-
-#     return loss
+    return loss
 
 args = net_argparser(ipynb=True)
 args.network = 1
@@ -49,9 +57,26 @@ W_true = train_dataset.get_weights(0)
 node = NormalizedCuts(eps=1e-3, bipart=args.bipart, symm_norm_L=args.symm_norm_L)
 
 random_count = 3
-steps = 200
+steps = 100
 lerp_weight = 0.05
 criterion = nn.BCEWithLogitsLoss()
+
+# temp = node.solve(W_true)[0]
+losses_2 = []
+for j in range(random_count):
+    this_losses2 = []
+    true_rand = torch.randn_like(true)
+    inbetween_true = true_rand
+    for i in range(0, steps):
+        inbetween_true = torch.lerp(inbetween_true, true, lerp_weight)
+        loss = criterion(inbetween_true, true)
+        this_losses2.append(loss.item())
+    losses_2.append(this_losses2)
+
+x = np.linspace(0, steps, steps)
+for j in range(random_count):
+    plt.plot(x,losses_2[j])
+plt.savefig('experiments/test-lerpoutput.png')
 
 losses = []
 plots = []
@@ -70,12 +95,12 @@ for j in range(random_count):
         in_between_symm = torch.lerp(in_between_symm, W_true, lerp_weight)
         in_between_symm = torch.div((in_between_symm + in_between_symm.mT), 2)
 
+        if i == steps:
+            in_between = W_true
+            in_between_symm = W_true
+
         pred = node.solve(in_between)[0] # solve returns (solution, ctx)
         pred_symm = node.solve(in_between_symm)[0]
-
-        if i == steps:
-            pred = true
-            pred_symm = true
 
         if j == 0 and i % (steps/10) == 0:
         # if i % (steps/10) == 0:
@@ -98,7 +123,12 @@ x = np.linspace(0, steps, steps)
 for j in range(random_count):
     plt.plot(x,losses[j], label= f'run {j}')
 
-second_fig_name = 'experiments/test-loss.png'
-# second_fig_name = f'experiments/test-bipart{args.bipart}-symm_L{args.symm_norm_L}-r{args.radius}-minify{args.minify}.png'
+
+basic = True
+if basic:
+    second_fig_name = 'experiments/test-loss.png'
+else:
+    second_fig_name = 'experiments/test-lech.png'
+    plt.title('bipart{args.bipart}-symm_L{args.symm_norm_L}-r{args.radius}-minify{args.minify}')
 plt.savefig(second_fig_name)
 print(f'saved {second_fig_name}')
