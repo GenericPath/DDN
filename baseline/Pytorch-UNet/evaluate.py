@@ -5,6 +5,9 @@ from tqdm import tqdm
 
 from utils.dice_score import multiclass_dice_coeff, dice_coeff
 
+from nc import partition
+from train import lech_loss
+
 
 def evaluate(net, dataloader, device):
     net.eval()
@@ -14,6 +17,10 @@ def evaluate(net, dataloader, device):
     # iterate over the validation set
     for batch in tqdm(dataloader, total=num_val_batches, desc='Validation round', unit='batch', leave=False):
         image, mask_true = batch['image'], batch['mask']/255
+
+        mask_true[mask_true > 0] = 1
+        mask_true[mask_true <= 0] = -1
+
         # move images and labels to correct device and type
         image = image.to(device=device, dtype=torch.double)
         mask_true = mask_true.to(device=device, dtype=torch.double)
@@ -22,9 +29,16 @@ def evaluate(net, dataloader, device):
         with torch.no_grad():
             # predict the mask
             mask_pred = net(image)
-            partition = (torch.sigmoid(mask_pred) > 0.5).double()
-            dice_score += dice_coeff(partition, mask_true)
 
+            # v2 eval code
+            bipart = partition(mask_pred)
+            loss = lech_loss(bipart, mask_true)
+
+            # v1 eval code
+            # partition = (torch.sigmoid(mask_pred) > 0.5).double()
+            # dice_score += dice_coeff(partition, mask_true)
+
+            # og eval code v0
             # # convert to one-hot format
             # if net.n_classes == 1:
             #     mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
@@ -39,6 +53,9 @@ def evaluate(net, dataloader, device):
 
     net.train()
 
+    return loss
+
+    # v1, v0 return statements
     # Fixes a potential division by zero error
     if num_val_batches == 0:
         return dice_score
