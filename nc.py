@@ -154,7 +154,7 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
             objectives: (b, x) Torch tensor,
                 batch of objective function evaluations
         """
-        # x = de_minW(x) # check if needs to be converted from minVer style
+        x = de_minW(x) # check if needs to be converted from minVer style
         y = y.flatten(-2) # converts to the vector with shape = (b, 1, N) 
         b, N = y.shape
         y = y.reshape(b,1,N) # convert to a col vector
