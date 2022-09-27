@@ -1,14 +1,14 @@
-from functools import partial
+# from functools import partial
 import torch
-import torch.nn.functional as F
+# import torch.nn.functional as F
 from tqdm import tqdm
 
-from utils.dice_score import multiclass_dice_coeff, dice_coeff
+# from utils.dice_score import multiclass_dice_coeff, dice_coeff
 
-from train import lech_loss
 
 import sys
 sys.path.append("../..")
+from testLossLinearIntrerp import lech_loss
 from nc import partition
 
 def evaluate(net, dataloader, device):
