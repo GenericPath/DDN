@@ -65,6 +65,20 @@ def main():
 
     node = NormalizedCuts(eps=1e-3, bipart=args.bipart, symm_norm_L=args.symm_norm_L)
 
+
+    test_output =  node.solve(W_true)[0]
+    test_output = test_output.flatten(-2)
+
+    
+    magnitude = np.sqrt(test_output[0].detach().numpy().dot(test_output[0].detach().numpy()))
+    print(f'Magnitude of eigenvector is {magnitude}')
+
+    rescaled = test_output / torch.max(torch.abs(test_output))
+    # TODO: actually check rescaled and use it properly
+    # TODO: get the min of inverted prediction for loss :)
+
+
+
     random_count = 3
     steps = 100
     lerp_weight = 0.05
