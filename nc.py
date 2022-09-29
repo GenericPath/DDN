@@ -282,6 +282,10 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         
         if self.bipart:
             output = partition(output)
+
+        max, min = (1, -1) # eigenvector is normalized to magnitude 1, so rescale to -1, 1
+        X_std = (output - output.min()) / (output.max() - output.min())
+        output = X_std * (max - min) + min
         
         return output.to(A.device).requires_grad_(True), None
     

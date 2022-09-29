@@ -46,7 +46,7 @@ def lech_loss(pred, mask):
 def main():
     args = net_argparser(ipynb=True)
     args.network = 1
-    args.total_images = 1
+    args.total_images = 10
     args.minify = True # TODO: test for this working properly
     args.bipart = False # Obviously will make it a non-continuous function
     args.symm_norm_L = False # TODO: test for this maybe? probably just leave off...
@@ -69,15 +69,8 @@ def main():
     test_output =  node.solve(W_true)[0]
     test_output = test_output.flatten(-2)
 
-    
-    magnitude = np.sqrt(test_output[0].detach().numpy().dot(test_output[0].detach().numpy()))
-    print(f'Magnitude of eigenvector is {magnitude}')
-
-    rescaled = test_output / torch.max(torch.abs(test_output))
-    # TODO: actually check rescaled and use it properly
-    # TODO: get the min of inverted prediction for loss :)
-
-
+    # magnitude = np.sqrt(test_output[0].detach().numpy().dot(test_output[0].detach().numpy()))
+    # print(f'Magnitude of eigenvector is {magnitude}')
 
     random_count = 3
     steps = 100
