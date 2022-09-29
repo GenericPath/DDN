@@ -209,7 +209,7 @@ if __name__ == '__main__':
         bilinear = True, # Use bilinear upsampling
 
         net='DDN',
-        minify=True,
+        minify=False,
         radius=150,
         eqconst=False,
         eps=1e-4,
