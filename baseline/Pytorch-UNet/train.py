@@ -110,6 +110,8 @@ def train_net(net, args, experiment, save_checkpoint = True):
                 true_masks = batch['mask']/255
                 true_masks[true_masks > 0] = 1
                 true_masks[true_masks <= 0] = -1
+                if true_masks[0][0][0] > 0:
+                    true_masks *= -1
 
                 images = images.to(device=device, dtype=torch.double)
                 true_masks = true_masks.to(device=device, dtype=torch.double)
@@ -159,6 +161,7 @@ def train_net(net, args, experiment, save_checkpoint = True):
                             'validation Dice': val_score,
                             'images': wandb.Image(images[0].cpu()),
                             'weights' : wandb.Image(de_minW(net.weightsNet(images[0][None,:])).float().cpu()),
+                            'weights2' : wandb.Image(net.weightsNet(images[0][None,:]).float().cpu()),
                             # 'objective' : test_node.objective(images[0][None,:].cpu(), masks_pred[0][None,:].float()),
                             'masks': {
                                 'true': wandb.Image(true_masks[0].float().cpu()),
@@ -177,7 +180,7 @@ def train_net(net, args, experiment, save_checkpoint = True):
 if __name__ == '__main__':
     # Default parameters
     hyperparameter_defaults = dict(
-        epochs=10, 
+        epochs=20, 
         batch_size = 50,
 
         lr = 1e-2, # will lower during training
@@ -207,7 +210,7 @@ if __name__ == '__main__':
 
         net='DDN',
         minify=True,
-        radius=100,
+        radius=150,
         eqconst=False,
         eps=1e-4,
         gamma=0.9,
@@ -217,7 +220,7 @@ if __name__ == '__main__':
 
         # NOT USED YET
         optim='sgd',
-        shuffle=False,
+        shuffle=True,
 
         # whether to have a network at the end
         post_net =False,

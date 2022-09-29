@@ -22,6 +22,8 @@ def evaluate(net, dataloader, device):
 
         mask_true[mask_true > 0] = 1
         mask_true[mask_true <= 0] = -1
+        if mask_true[0][0][0] > 0:
+            mask_true *= -1
 
         # move images and labels to correct device and type
         image = image.to(device=device, dtype=torch.double)
