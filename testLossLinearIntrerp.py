@@ -66,8 +66,8 @@ def main():
     node = NormalizedCuts(eps=1e-3, bipart=args.bipart, symm_norm_L=args.symm_norm_L)
 
 
-    test_output =  node.solve(W_true)[0]
-    test_output = test_output.flatten(-2)
+    # test_output =  node.solve(W_true)[0]
+    # test_output = test_output.flatten(-2)
 
     # magnitude = np.sqrt(test_output[0].detach().numpy().dot(test_output[0].detach().numpy()))
     # print(f'Magnitude of eigenvector is {magnitude}')
