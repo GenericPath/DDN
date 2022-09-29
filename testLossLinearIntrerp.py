@@ -47,7 +47,7 @@ def main():
     args = net_argparser(ipynb=True)
     args.network = 1
     args.total_images = 10
-    args.minify = True # TODO: test for this working properly
+    args.minify = False # TODO: test for this working properly
     args.bipart = False # Obviously will make it a non-continuous function
     args.symm_norm_L = False # TODO: test for this maybe? probably just leave off...
     args.radius = 100
@@ -58,6 +58,9 @@ def main():
     true = train_dataset.get_segmentation(0)
     true[true > 0] = 1
     true[true <= 0] = -1
+
+    if true[0][0][0] > 0:
+        true *= -1
     # convert true to the expectation {-1,1} instead of 0,1?
 
 
