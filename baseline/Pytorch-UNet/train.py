@@ -162,7 +162,7 @@ def train_net(net, args, experiment, save_checkpoint = True):
                         logging.info('Validation Dice score: {}'.format(val_score))
                         experiment.log({
                             'learning rate': optimizer.param_groups[0]['lr'],
-                            'validation Dice': val_score,
+                            'validation loss': val_score,
                             'images': wandb.Image(images[0].cpu()),
                             'weights' : wandb.Image(de_minW(net.weightsNet(images[0][None,:])).float().cpu()),
                             'weights2' : wandb.Image(net.weightsNet(images[0][None,:]).float().cpu()),
