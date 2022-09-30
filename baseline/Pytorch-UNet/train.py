@@ -91,7 +91,7 @@ def train_net(net, args, experiment, save_checkpoint = True):
     if args.optim == 'sgd':
         optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum)
     elif args.optim == 'adam':
-        optimizer = optim.adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     else:
         raise Exception(f'Optimizer not supported - {args.optim}')
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=args.patience)  # goal: maximize Dice score
@@ -189,8 +189,8 @@ if __name__ == '__main__':
         epochs=20, 
         batch_size = 50,
 
-        lr = 1e-2, # will lower during training
-        weight_decay=1e-8,
+        lr = 1e-3, # will lower during training
+        weight_decay=0,
         momentum=0.9,
         patience=5,
 
@@ -220,12 +220,12 @@ if __name__ == '__main__':
         eqconst=False,
         eps=1e-4,
         gamma=0.9,
-        net_size_weights=[1,8,8,4],
+        net_size_weights=[16,16,4],
         net_size_post=[1,4,8,4],
         img_size = (16,16),
 
         # NOT USED YET
-        optim='sgd',
+        optim='adam',
         shuffle=True,
 
         # whether to have a network at the end
