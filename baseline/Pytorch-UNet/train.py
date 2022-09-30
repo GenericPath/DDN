@@ -149,8 +149,12 @@ def train_net(net, args, experiment, save_checkpoint = True):
                         #     histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
                         #     histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                        val_score = evaluate(net, val_loader, device)
+                        val_score, objectives = evaluate(net, val_loader, device)
                         scheduler.step(val_score)
+
+
+                        obj_mean = torch.mean(objectives)
+                        obj_std = torch.std(objectives)
 
                         # partition = (torch.sigmoid(mask_pred) > 0.5).double()
                         # log this instead?
@@ -167,6 +171,8 @@ def train_net(net, args, experiment, save_checkpoint = True):
                                 'true': wandb.Image(true_masks[0].float().cpu()),
                                 'pred': wandb.Image(masks_pred[0].float().cpu()),
                             },
+                            'obj func mean' : obj_mean,
+                            'obj func std' : obj_std,
                             'step': global_step,
                             'epoch': epoch,
                             # **histograms

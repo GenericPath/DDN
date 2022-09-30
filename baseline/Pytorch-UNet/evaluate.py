@@ -9,7 +9,41 @@ from tqdm import tqdm
 import sys
 sys.path.append("../..")
 from testLossLinearIntrerp import lech_loss
-from nc import partition
+from nc import partition, de_minW
+
+# copied from nc.py, to avoid making an instance of NormalizedCuts i guess
+def objective(x, y):
+    """
+    f(W,y) = y^T * (D-W) * y / y^T * D * y
+
+    Arguments:
+        y: (b, x, y) Torch tensor,
+            batch of solution tensors
+
+        x: (b, N, N) Torch tensor,
+            batch of affinity/weight tensors (N = x * y)        
+
+    Return value:
+        objectives: (b, x) Torch tensor,
+            batch of objective function evaluations
+    """
+    x = de_minW(x) # check if needs to be converted from minVer style
+    y = y.flatten(-2) # converts to the vector with shape = (b, 1, N) 
+    b, N = y.shape
+    y = y.reshape(b,1,N) # convert to a col vector
+
+    # d = torch.einsum('bij->bj', x) # eqv to x.sum(0) --- d vector
+    d = x.sum(1, dtype=y.dtype) # 1 because 0 is batch
+    D = torch.diag_embed(d) # D = matrix with d on diagonal
+
+    L = D-x # TODO: check does this need to be symmetric too?
+
+    objective_output = torch.div(
+        torch.einsum('bij,bkj->bik', torch.einsum('bij,bkj->bik', y, L), y),
+        torch.einsum('bij,bkj->bik', torch.einsum('bij,bkj->bik', y, D), y)
+    ).squeeze(-2)
+
+    return objective_output
 
 def evaluate(net, dataloader, device):
     net.eval()
@@ -38,6 +72,8 @@ def evaluate(net, dataloader, device):
             bipart = partition(mask_pred)
             loss = lech_loss(bipart, mask_true)
 
+
+            objectives = objective(net.weightsNet(image), mask_pred)
             # v1 eval code
             # partition = (torch.sigmoid(mask_pred) > 0.5).double()
             # dice_score += dice_coeff(partition, mask_true)
@@ -57,7 +93,7 @@ def evaluate(net, dataloader, device):
 
     net.train()
 
-    return loss
+    return loss, objectives
 
     # v1, v0 return statements
     # Fixes a potential division by zero error
