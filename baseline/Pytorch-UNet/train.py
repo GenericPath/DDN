@@ -197,8 +197,8 @@ if __name__ == '__main__':
         # dir_img='1sample', # defaults to data/ + data_path
         # dir_mask='1sample', # same as above
 
-        dir_img = 'simple01/16-16/images',
-        dir_mask = 'simple01/16-16/images',
+        dir_img = 'tc/img/',
+        dir_mask = 'tc/maskT/',
 
         val=10, # Percent of the data that is used as validation (0-100)
 
@@ -225,7 +225,7 @@ if __name__ == '__main__':
         img_size = (16,16),
 
         # NOT USED YET
-        optim='sgd',
+        optim='adam',
         shuffle=True,
 
         # whether to have a network at the end
