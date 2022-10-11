@@ -197,8 +197,8 @@ if __name__ == '__main__':
         # dir_img='1sample', # defaults to data/ + data_path
         # dir_mask='1sample', # same as above
 
-        dir_img = 'tc/img/',
-        dir_mask = 'tc/maskT/',
+        dir_img = 'simple01/16-16/images',
+        dir_mask = 'simple01/16-16/images',
 
         val=10, # Percent of the data that is used as validation (0-100)
 
@@ -220,7 +220,7 @@ if __name__ == '__main__':
         eqconst=False,
         eps=1e-4,
         gamma=0.9,
-        net_size_weights=[1,16,16,4],
+        net_size_weights=[1,8,8,4],
         net_size_post=[1,4,8,4],
         img_size = (16,16),
 
