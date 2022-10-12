@@ -34,10 +34,6 @@ def lech_loss(pred, mask):
     pred_bar = pred
 
     relu = nn.ReLU()
-    # TODO:
-    # 1. verify if pred_bar is used for pred
-    # 2. see if i need to flatten (shouldnt as it should broadcast correctly?)
-    # 3. and otherwise checking everything is all good!
 
     loss = torch.bmm((1-mask_bar),(pred_bar+1)**2) + torch.bmm(mask_bar, relu(-pred_bar))
     return torch.mean(loss) # avg across batch I guess
@@ -61,13 +57,10 @@ def main():
 
     if true[0][0][0] > 0:
         true *= -1
-    # convert true to the expectation {-1,1} instead of 0,1?
-
 
     W_true = train_dataset.get_weights(0).double()
 
     node = NormalizedCuts(eps=1e-3, bipart=args.bipart, symm_norm_L=args.symm_norm_L)
-
 
     # test_output =  node.solve(W_true)[0]
     # test_output = test_output.flatten(-2)
@@ -86,6 +79,8 @@ def main():
         true_rand = torch.randn_like(true)
         inbetween_true = true_rand
         for i in range(0, steps):
+            # Lerp between random matrix and true (the output)
+            # will always be a perfect curve to 0 if loss works
             inbetween_true = torch.lerp(inbetween_true, true, lerp_weight)
             loss = criterion(inbetween_true, true)
             this_losses2.append(loss.item())
@@ -94,7 +89,7 @@ def main():
     x = np.linspace(0, steps, steps)
     for j in range(random_count):
         plt.plot(x,losses_2[j])
-    name = 'experiments/test-lerpoutput.png'
+    name = 'experiments/loss-from-lerpoutput.png'
     plt.savefig(name)
     print(f'saved {name}')
     plt.close()
@@ -102,6 +97,9 @@ def main():
     losses = []
     plots = []
     labels = []
+    ####
+    # Lerp the weights, and then plot the loss on the output (after eigenvector)
+    # idealy would match the above outputs
     for j in range(random_count):
         W_rand = torch.randn_like(W_true, dtype=torch.double) 
 
@@ -153,7 +151,7 @@ def main():
     if basic:
         second_fig_name = 'experiments/test-loss.png'
     else:
-        second_fig_name = 'experiments/test-lech.png'
+        second_fig_name = 'experiments/loss-from-lerpweights.png'
         plt.title(f'bipart{args.bipart}-symm_L{args.symm_norm_L}-r{args.radius}-minify{args.minify}')
     plt.savefig(second_fig_name)
     plt.close()
