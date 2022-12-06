@@ -20,6 +20,7 @@ for max_iter in [1,5,25,100]:
         print(f"max_iter = {max_iter}: eigenvector = {eigenvectors}")
     except:
         print('failed for this iteration')
+        # The currently converged eigenvalues and eigenvectors can be found as eigenvalues and eigenvectors attributes of the exception object.
 
 # currently we can get flipped eigs
 # Note that eigenvectors are not unique. Multiplying by any constant gives another valid eigenvector.
