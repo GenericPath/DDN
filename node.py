@@ -281,17 +281,17 @@ class AbstractDeclarativeNode(AbstractNode):
         if len(B.size()) == 2:
             B = B.unsqueeze(-1)
         try: # Batchwise Cholesky solve
-            A_decomp = torch.cholesky(A, upper=False)
+            A_decomp = torch.linalg.cholesky(A, upper=False) # NOTE: this line was changed by Garth Wales to update it for modern pytorch (previously torch.cholesky with no param changes)
             X = torch.cholesky_solve(B, A_decomp, upper=False) # bxmxn
         except: # Revert to loop if batchwise solve fails
             X = torch.zeros_like(B)
             for i in range(A.size(0)):
                 try: # Cholesky solve
-                    A_decomp = torch.cholesky(A[i, ...], upper=False)
+                    A_decomp = torch.linalg.cholesky(A[i, ...], upper=False) # NOTE: this line was changed by Garth Wales to update it for modern pytorch (previously torch.cholesky with no param changes)
                     X[i, ...] = torch.cholesky_solve(B[i, ...], A_decomp,
                         upper=False) # mxn
                 except: # Revert to LU solve
-                    X[i, ...], _ = torch.solve(B[i, ...], A[i, ...]) # mxn
+                    X[i, ...]= torch.linalg.solve(A[i, ...], B[i, ...]) # mxn # NOTE: this line was changed by Garth Wales to update it for modern pytorch (previously torch.solve(B,A))
         if B_sizes is not None:
             X = X.split(B_sizes, dim=-1)
         return X
