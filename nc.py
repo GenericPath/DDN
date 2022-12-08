@@ -133,7 +133,7 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
     Normalized Cuts and Image Segmentation https://people.eecs.berkeley.edu/~malik/papers/SM-ncut.pdf
     Shi, J., & Malik, J. (2000)
     """
-    def __init__(self, chunk_size=None, eps=1e-8, gamma=None, experiment=None, bipart=True, symm_norm_L=False):
+    def __init__(self, chunk_size=None, eps=1e-8, gamma=None, experiment=None, bipart=False, symm_norm_L=False):
         super().__init__(chunk_size=chunk_size, eps=eps, gamma=gamma) # input is divided into chunks of at most chunk_size
         self.experiment = experiment
         self.bipart = bipart
