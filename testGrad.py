@@ -1,6 +1,7 @@
 from net_argparser import net_argparser
 from data import *
 from nc import NormalizedCuts
+from torch.autograd import grad
 
 
 from scipy.sparse.linalg import eigsh, eigs
@@ -53,7 +54,7 @@ def new_solve(A, expected=None):
     # old bit
     # (w, v) = torch.linalg.eigh(L_norm.cpu())
     # new bit
-    max_iter = 10000 # just guarantee some type of convergence to machine precision (tol=0)
+    max_iter = 1000000 # just guarantee some type of convergence to machine precision (tol=0)
     output = []
     
     for i in range(b):
@@ -116,8 +117,10 @@ def main():
     y, _ = new_solve(W_true)
     node.gradient(W_true.requires_grad_(True), y=y)
     
-    
-    
+    f = torch.enable_grad()(node.objective)(W_true, y=y)
+    fY = grad(f, y, grad_outputs=torch.ones_like(f), create_graph=True)[0]
+    # fY = torch.enable_grad()(fY.reshape)(self.b, -1) # bxm
+
     # {POST EIG} code.. TODO: move to the solve.. and then put the solve into the 
     
     print('donezo')
