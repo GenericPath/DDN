@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse.linalg import eigsh
+from scipy.sparse.linalg import eigsh, ArpackNoConvergence
 
 # local imports
 from node import *
@@ -283,8 +283,14 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         max_iter = 1000000 # just guarantee some type of convergence to machine precision (tol=0)
         output = []
         
+        # Include error if doesn't converge perfectly, so it will continue with the best guess
         for i in range(b):
-            (w,v) = eigsh(A.detach().cpu().numpy()[i], maxiter=max_iter, tol=0, which='SM', k=1)
+            try:
+                (w,v) = eigsh(A.detach().cpu().numpy()[i], maxiter=max_iter, tol=1e-7, which='SM', k=1)
+            except ArpackNoConvergence as out:
+                (w,v) = out.eigenvalues, out.eigenvectors
+                print(A)
+                print(v)
             output.append(v)
         
         # Returns the second smallest eigenvector
