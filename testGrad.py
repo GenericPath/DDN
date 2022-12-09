@@ -70,10 +70,7 @@ def new_solve(A, expected=None):
     # if self.bipart:
     #     output = partition(output)
 
-
     # TODO: put the {POST EIG} code here
-
-
 
     if expected is not None:
         print('TODO: make this plot the visual of it :)')

@@ -51,8 +51,8 @@ hyperparameter_defaults = dict(
         net='DDN',
         minify=False,
         radius=10,
-        eqconst=True,
-        eps=1e-4,
+        eqconst=False,
+        eps=1e-7,
         gamma=0,
         net_size_weights=[1,4,8,4],
         net_size_post=[1,4,8,4],
@@ -62,7 +62,7 @@ hyperparameter_defaults = dict(
         shuffle=True,
 
         # whether to have a network at the end
-        post_net =False,
+        post_net =True,
         # whether to default partion the outputs
         bipart = False, # would make the output not a smooth function and thus gradients would be useless
 )
