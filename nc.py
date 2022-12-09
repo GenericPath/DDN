@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.sparse.linalg import eigsh
 
 # local imports
 from node import *
@@ -237,7 +238,7 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         # # return the constraint calculation, squeezed to output size
         # return torch.einsum('bIK,bKJ->bIJ', torch.einsum('bIK,bKJ->bIJ',y, D), ONE).squeeze(-2)
 
-    def solve(self, A):
+    def solve(self, A, expected=None):
         """ 
         Solve the normalized cuts using eigenvectors (produces single cut, no recursion yet)
 
@@ -247,6 +248,81 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
 
         TODO: pass a parameter to avoid hardcoded output dimensions
         """        
+        # Implementation notes:
+        # - requires einsum's to act on batch. Otherwise torch complains about tensors not being in graph being differentiated
+            # TODO: check if above claim is true still since refactoring
+        # - inf in D_inv_sqrt don't matter as other functions used seem to handle it fine, previously avoided by only inverting the diagonal
+
+        A = A.detach() # TODO : verify if this breaks anything
+
+        A = de_minW(A) # check if needs to be converted from minVer style
+        b,x,y = A.shape
+        out_size = int(np.sqrt(x)) # NOTE: assumes it is square..
+        output_size = (b,out_size,out_size)
+
+        # can also replace bc with ...
+        d = torch.einsum('bij->bj', A) # eqv to A.sum(0) --- d vector
+        D = torch.diag_embed(d) # D = matrix with d on diagonal
+        D_inv_sqrt = torch.diag_embed(d.pow(-0.5)) # previously had pow inside diag
+
+        L = D-A # Laplacian matrix
+
+        # if self.symm_norm_L:
+        #     # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
+        #     L_norm = torch.einsum('...ij,...jk->...ik', torch.einsum('...ij,...jk->...ik', D_inv_sqrt , L) , D_inv_sqrt)
+        #     # L_norm = L_norm.to(A.device)
+        # else:
+        L_norm = L
+
+        # # # # # # # # # #
+        # Solve eigenvectors and eigenvalues
+        # TODO: replace this bit
+        # old bit
+        # (w, v) = torch.linalg.eigh(L_norm.cpu())
+        # new bit
+        max_iter = 1000000 # just guarantee some type of convergence to machine precision (tol=0)
+        output = []
+        
+        for i in range(b):
+            (w,v) = eigsh(A.detach().cpu().numpy()[i], maxiter=max_iter, tol=0, which='SM', k=1)
+            output.append(v)
+        
+        # Returns the second smallest eigenvector
+        # output = v[:,:,1,None].reshape(output_size)
+        output = np.asarray(output)
+        output = output.reshape(output_size)
+        # DNN NOTE: Detach inputs from graph, attach only the output (or if using optimisation to solve you can with torch.enable_grad() ( ... optim ))
+        
+        # if self.bipart:
+        #     output = partition(output)
+
+        # TODO: put the {POST EIG} code here
+
+        if expected is not None:
+            print('TODO: make this plot the visual of it :)')
+
+
+        # # # # # # # # # #
+        # TODO: this is the bit to make it the correct numbers... so can scale and it will still be a valid eigenvector... need to work out which approach works best for this.
+        output *= (out_size)
+
+        # remove any inversion of groups A,B (so either doesn't flip sign)
+        if output[0][0][0] > 0:
+            output *= -1
+            
+        output = torch.tensor(output)
+        return output.to(A.device).requires_grad_(True), None
+
+    def old_solve(self, A):
+        """ 
+        Solve the normalized cuts using eigenvectors (produces single cut, no recursion yet)
+
+        Arguments:
+            A: (b, N, N) Torch tensor,
+                batch of affinity/weight tensors (N = x * y from orignal x,y images)
+
+        TODO: pass a parameter to avoid hardcoded output dimensions
+        """
         # Implementation notes:
         # - requires einsum's to act on batch. Otherwise torch complains about tensors not being in graph being differentiated
             # TODO: check if above claim is true still since refactoring
@@ -285,7 +361,7 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
 
 
         # Take the normalized eigenvector (magnitude 1) and scale to -1, 1
-        max, min = (1, -1) # eigenvector is normalized to magnitude 1, so rescale to -1, 1
+        # max, min = (1, -1) # eigenvector is normalized to magnitude 1, so rescale to -1, 1
         # X_std = (output - output.min()) / (output.max() - output.min())
         # output = X_std * (max - min) + min
         output *= (out_size)
