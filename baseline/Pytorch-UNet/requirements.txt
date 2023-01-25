@@ -5,3 +5,7 @@ torch
 torchvision
 tqdm
 wandb
+# TODO: once tests are complete remove these if not used
+# for debian: sudo apt-get install libsuitesparse-dev
+#             avoids errors when building wheels for scikitsparse (PEP 517)
+scikit-sparse
