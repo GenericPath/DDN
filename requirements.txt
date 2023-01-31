@@ -1,3 +1,10 @@
+# TODO: once tests are complete remove these if not used
+# for debian: sudo apt-get install libsuitesparse-dev
+#             avoids errors when building wheels for scikitsparse (PEP 517)
+# for mac: unknown fix
+scikit-sparse
+
+
 # ML libraries for deep declarative networks
 torch
 torchvision
@@ -16,8 +23,4 @@ torch_tb_profiler
 argparse
 tqdm
 
-
-# TODO: once tests are complete remove these if not used
-# for debian: sudo apt-get install libsuitesparse-dev
-#             avoids errors when building wheels for scikitsparse (PEP 517)
-scikit-sparse
+wandb
