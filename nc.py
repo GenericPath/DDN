@@ -286,11 +286,15 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         # Include error if doesn't converge perfectly, so it will continue with the best guess
         for i in range(b):
             try:
-                (w,v) = eigsh(A.detach().cpu().numpy()[i], maxiter=max_iter, tol=1e-7, which='SM', k=1)
+                (w,v) = eigsh(A.detach().cpu().numpy()[i], maxiter=1000, tol=1e-7, which='SM', k=1)
             except ArpackNoConvergence as out:
-                (w,v) = out.eigenvalues, out.eigenvectors
-                print(A)
-                print(v)
+                (w_1,v_1) = out.eigenvalues, out.eigenvectors # TODO: check these
+                try:
+                    (w,v) = eigsh(A.detach().cpu().numpy()[i], maxiter=1000, tol=1e-4, which='SM', k=1)
+                except ArpackNoConvergence as out:
+                    (w,v) = out.eigenvalues, out.eigenvectors
+                    print(A)
+                    print(v)
             output.append(v)
         
         # Returns the second smallest eigenvector
