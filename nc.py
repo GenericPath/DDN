@@ -149,7 +149,7 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
                 batch of solution tensors
 
             x: (b, N, N) Torch tensor,
-                batch of affinity/weight tensors (N = x * y)        
+                batch of affinity/weight tensors (N = x * y) where x and y are dimensions not the args       
 
         Return value:
             objectives: (b, x) Torch tensor,
