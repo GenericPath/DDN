@@ -111,7 +111,7 @@ def main():
     
     node = NormalizedCuts(eps=1e-3)#, bipart=args.bipart, symm_norm_L=args.symm_norm_L)
 
-    y, _ = new_solve(W_true)
+    y, _ = node.solve(W_true) # vs new_solve which should be the same now :)
     node.gradient(W_true.requires_grad_(True), y=y)
     
     f = torch.enable_grad()(node.objective)(W_true, y=y)
