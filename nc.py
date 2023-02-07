@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.sparse.linalg import eigsh, ArpackNoConvergence
 
+# for testing different eigensolvers..
+from functools import partial
+
 # local imports
 from node import *
 
@@ -238,7 +241,9 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         # # return the constraint calculation, squeezed to output size
         # return torch.einsum('bIK,bKJ->bIJ', torch.einsum('bIK,bKJ->bIJ',y, D), ONE).squeeze(-2)
 
-    def solve(self, A, expected=None):
+    def solve(self, A, func=partial(eigsh, maxiter=1000, tol=1e-7, which='SM', k=1)):
+        # expected=None
+
         """ 
         Solve the normalized cuts using eigenvectors (produces single cut, no recursion yet)
 
@@ -280,23 +285,16 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         # old bit
         # (w, v) = torch.linalg.eigh(L_norm.cpu())
         # new bit
-        max_iter = 1000000 # just guarantee some type of convergence to machine precision (tol=0)
-        output = []
         
-        # Include error if doesn't converge perfectly, so it will continue with the best guess
-        for i in range(b):
-            try:
-                (w,v) = eigsh(A.detach().cpu().numpy()[i], maxiter=1000, tol=1e-7, which='SM', k=1)
-            except ArpackNoConvergence as out:
-                (w_1,v_1) = out.eigenvalues, out.eigenvectors # TODO: check these
-                try:
-                    (w,v) = eigsh(A.detach().cpu().numpy()[i], maxiter=1000, tol=1e-4, which='SM', k=1)
-                except ArpackNoConvergence as out:
-                    (w,v) = out.eigenvalues, out.eigenvectors
-                    print(A)
-                    print(v)
-            output.append(v)
-        
+        # Solve
+        # TODO: Make this a loop over each (since some of them won't work on a batch basis...)
+        y = func(L_norm.cpu())
+        # Take solution out of eigenvalue, eigenvector pair (if needed)
+        if isinstance(y,tuple):
+            (w,v) = y # TODO: verify this makes sense for all options (and they aren't in reverse order or include trivial answer..)
+            y = v[:,:,1,None] # b,N,1
+        output = y
+
         # Returns the second smallest eigenvector
         # output = v[:,:,1,None].reshape(output_size)
         output = np.asarray(output)
@@ -308,8 +306,8 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
 
         # TODO: put the {POST EIG} code here
 
-        if expected is not None:
-            print('TODO: make this plot the visual of it :)')
+        # if expected is not None:
+        #     print('TODO: make this plot the visual of it :)')
 
 
         # # # # # # # # # #
