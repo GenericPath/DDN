@@ -148,11 +148,11 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         f(W,y) = y^T * (D-W) * y / y^T * D * y
 
         Arguments:
-            y: (b, x, y) Torch tensor,
-                batch of solution tensors
-
             x: (b, N, N) Torch tensor,
                 batch of affinity/weight tensors (N = x * y) where x and y are dimensions not the args       
+            
+            y: (b, x, y) Torch tensor,
+                batch of solution tensors
 
         Return value:
             objectives: (b, x) Torch tensor,
@@ -211,16 +211,16 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
                 batch of constraint calculation scalars
         """
         # x = de_minW(x) # check if needs to be converted from minVer style
-
+                
         y = y.flatten(-2)
         b,N = y.shape
         y = y.reshape(b,1,N) # does the same as extending and tranposing
         # y = torch.transpose(y, 1, 2)
 
-        d = x.sum(1) # row sum
+        d = x.sum(1, dtype=y.dtype) # row sum
         D = torch.diag_embed(d)
-        ONE = torch.ones((b,N,1), dtype=torch.double)
-
+        ONE = torch.ones((b,N,1), dtype=y.dtype)
+        
         return torch.bmm(torch.bmm(y,D),ONE)
 
         # y = y.flatten(-2) # converts to the vector with shape = (32, 1, N) 
