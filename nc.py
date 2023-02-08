@@ -279,26 +279,19 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         # else:
         L_norm = L
 
-        # # # # # # # # # #
-        # Solve eigenvectors and eigenvalues
-        # TODO: replace this bit
-        # old bit
-        # (w, v) = torch.linalg.eigh(L_norm.cpu())
-        # new bit
-        
-        # Solve
-        # TODO: Make this a loop over each (since some of them won't work on a batch basis...)
-        y = func(L_norm.cpu())
-        # Take solution out of eigenvalue, eigenvector pair (if needed)
-        if isinstance(y,tuple):
-            (w,v) = y # TODO: verify this makes sense for all options (and they aren't in reverse order or include trivial answer..)
-            y = v[:,:,1,None] # b,N,1
-        output = y
-
-        # Returns the second smallest eigenvector
-        # output = v[:,:,1,None].reshape(output_size)
+        output = []
+        for i in range(b):
+            # Solve using the specified eigenvector method
+            y = func(L_norm.cpu()[i])
+            # Take solution out of eigenvalue, eigenvector pair (if needed)
+            if isinstance(y,tuple):
+                (w,v) = y # TODO: verify this makes sense for all options (and they aren't in reverse order or include trivial answer..)
+                y = v[:,1,None] # N,1 (Add an additional :, at start if also working on batches)
+            output.append(y)
         output = np.asarray(output)
         output = output.reshape(output_size)
+        
+        
         # DNN NOTE: Detach inputs from graph, attach only the output (or if using optimisation to solve you can with torch.enable_grad() ( ... optim ))
         
         # if self.bipart:
