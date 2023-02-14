@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse.linalg import eigsh, ArpackNoConvergence
 
 # for testing different eigensolvers..
 from functools import partial
