@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 # for testing different eigensolvers..
 from functools import partial
-import scipy
+from scipy import linalg
 
 # local imports
 from node import *
@@ -241,7 +241,7 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         # # return the constraint calculation, squeezed to output size
         # return torch.einsum('bIK,bKJ->bIJ', torch.einsum('bIK,bKJ->bIJ',y, D), ONE).squeeze(-2)
 
-    def solve(self, A, func=partial(scipy.linalg.eigh, check_finite=False, subset_by_index=[0,1], driver='evr')):
+    def solve(self, A, func=partial(linalg.eigh, check_finite=False, subset_by_index=[0,1], driver='evr')):
         # expected=None
 
         """ 
