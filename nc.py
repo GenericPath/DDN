@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 # for testing different eigensolvers..
 from functools import partial
+import scipy
 from scipy import linalg
 
 # local imports
