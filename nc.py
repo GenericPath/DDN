@@ -5,6 +5,7 @@ from scipy.sparse.linalg import eigsh, ArpackNoConvergence
 
 # for testing different eigensolvers..
 from functools import partial
+import scipy
 
 # local imports
 from node import *
@@ -241,7 +242,7 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
         # # return the constraint calculation, squeezed to output size
         # return torch.einsum('bIK,bKJ->bIJ', torch.einsum('bIK,bKJ->bIJ',y, D), ONE).squeeze(-2)
 
-    def solve(self, A, func=partial(eigsh, maxiter=1000, tol=1e-7, which='SM', k=1)):
+    def solve(self, A, func=partial(scipy.linalg.eigh, check_finite=False, subset_by_index=[0,1], driver='evr')):
         # expected=None
 
         """ 
