@@ -23,4 +23,6 @@ torch_tb_profiler
 argparse
 tqdm
 
+ipyplot
+
 wandb
