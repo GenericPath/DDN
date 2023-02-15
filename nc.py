@@ -306,11 +306,11 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
 
         # # # # # # # # # #
         # TODO: this is the bit to make it the correct numbers... so can scale and it will still be a valid eigenvector... need to work out which approach works best for this.
-        output *= (out_size)
+        #output *= (out_size)
 
         # remove any inversion of groups A,B (so either doesn't flip sign)
-        if output[0][0][0] > 0:
-            output *= -1
+        #if output[0][0][0] > 0:
+        #    output *= -1
             
         output = torch.tensor(output)
         return output.to(A.device).requires_grad_(True), None
