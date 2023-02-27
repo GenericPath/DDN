@@ -273,12 +273,12 @@ class NormalizedCuts(AbstractDeclarativeNode): # AbstractDeclarativeNode vs EqCo
 
         L = D-A # Laplacian matrix
 
-        # if self.symm_norm_L:
-        #     # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
-        #     L_norm = torch.einsum('...ij,...jk->...ik', torch.einsum('...ij,...jk->...ik', D_inv_sqrt , L) , D_inv_sqrt)
-        #     # L_norm = L_norm.to(A.device)
-        # else:
-        L_norm = L
+        if self.symm_norm_L:
+            # The symmetrically normalized laplacian can be calculated as D^-0.5 * L * D^-0.5 or eqv. I - D^-0.5 * A * D^-0.5 
+            L_norm = torch.einsum('...ij,...jk->...ik', torch.einsum('...ij,...jk->...ik', D_inv_sqrt , L) , D_inv_sqrt)
+            # L_norm = L_norm.to(A.device)
+        else:
+            L_norm = L
 
         output = []
         for i in range(b):
