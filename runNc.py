@@ -1,5 +1,5 @@
 import numpy as np
-import scipy.sparse.linalg
+from scipy.sparse import linalg
 
 # https://github.com/lin-902/Normalized_cuts/blob/master/ncut/ncut.py#L77
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html
@@ -18,9 +18,11 @@ def laplacian(D, A, symm=True):
     else:
         return D-A
     
+# def degree(W):
+#     return _
     
 def cut(input):
-    scipy.sparse.linalg.eigs()
+    return linalg.eigs(input)
     
 def weights(img):
     channel = 1
