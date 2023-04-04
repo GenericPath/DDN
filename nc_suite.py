@@ -97,7 +97,7 @@ def solve_ncut(D,W):
     d2 = D.copy()
     d2 = np.reciprocal(np.sqrt(d2.data, where=d2>0), where=d2>0) # avoid nans and infs using where - using out=d2.data may be more efficient?
 
-    A = d2 * (d2 - W) * d2 # TODO: is this supposed to be D-W in middle, and if so.. scikit-learn is wrong? or still right?
+    A = d2 * (D - W) * d2
 
     m = W.shape[0]
 
