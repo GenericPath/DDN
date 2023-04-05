@@ -1,5 +1,3 @@
-from skimage import data, segmentation, graph, color
-from torchvision import datasets
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8,8 +6,8 @@ import networkx as nx
 
 def plot_images(imgs, labels=None):
     num = len(imgs)
-    ax = np.ceil(np.sqrt(num)).astype(int)
-    ay = np.rint(np.sqrt(num)).astype(int)
+    ay = np.ceil(np.sqrt(num)).astype(int) # this way it will prefer rows rather than columns
+    ax = np.rint(np.sqrt(num)).astype(int)
     fig = plt.figure()
     for i in range(1, num+1):
         sub = fig.add_subplot(ax,ay,i)
