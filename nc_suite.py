@@ -29,6 +29,12 @@ def DW_matrices(graph):
     
     return D, W
 
+def D_matrix(W):
+    d = W.sum(axis=0)
+    D = np.diag(d) 
+    
+    return D
+
 def argmin2(array):
     # O(n) to find second smallest argmin, instead of sorting O(n^2)
     min1 = np.inf
