@@ -57,10 +57,21 @@ def intens_posit_wm(img):
     """
     return intensity_weight_matrix(img) * positional_weight_matrix(img)
 
-def plot_images(imgs, labels=None):
+def plot_images(imgs, labels=None, colmns=None):
+    """
+    imgs = [img1, img2]
+    labels = ['label1', 'label2']
+    colmns = 2 (so will be a 1x2 size display)
+    """
+    
     num = len(imgs)
-    ay = np.ceil(np.sqrt(num)).astype(int) # this way it will prefer rows rather than columns
-    ax = np.rint(np.sqrt(num)).astype(int)
+    # Calculate the given number of subplots, or use colmns count to get a specific output
+    if colmns == None:
+        ay = np.ceil(np.sqrt(num)).astype(int) # this way it will prefer rows rather than columns
+        ax = np.rint(np.sqrt(num)).astype(int)
+    else:
+        ax = np.ceil(num / colmns).astype(int)
+        ay = colmns
     fig = plt.figure()
     for i in range(1, num+1):
         sub = fig.add_subplot(ax,ay,i)
@@ -168,3 +179,29 @@ def solve_ncut(D,W):
     ev = vectors[:, index2]
         
     return ev
+
+
+def _deterministic_vector_sign_flip(u):
+    """Modify the sign of vectors for reproducibility.
+
+    Flips the sign of elements of all the vectors (rows of u) such that
+    the absolute maximum element of each vector is positive.
+
+    Parameters
+    ----------
+    u : ndarray
+        Array with vectors as its rows.
+
+    Returns
+    -------
+    u_flipped : ndarray with same shape as u
+        Array with the sign flipped vectors as its rows.
+    """
+    # from https://github.com/scikit-learn/scikit-learn/blob/2a2772a87b6c772dc3b8292bcffb990ce27515a8/sklearn/utils/extmath.py#L1093
+    # used in SpectralClustering
+    
+    
+    max_abs_rows = np.argmax(np.abs(u), axis=1)
+    signs = np.sign(u[range(u.shape[0]), max_abs_rows])
+    u *= signs[:, np.newaxis]
+    return u
