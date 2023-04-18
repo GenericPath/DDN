@@ -4,6 +4,59 @@ import matplotlib.pyplot as plt
 from scipy.sparse import linalg
 import networkx as nx
 
+
+def manual_weights_binary(img, r=1):
+    N = img.shape[0] * img.shape[1]
+    W = np.zeros((N,N))
+
+    r = min(N//2, r) # ensure the r value doesn't exceed the axes of the outputs
+
+    I = img.flatten()
+    for u in range(N-1): # could use step size of r to improve speed?
+        end = min(u+r+1, N-1) # upper triangle, only traverse as far as needed
+        for v in range(u,end):
+            if np.linalg.norm(u-v) > r: # 4-way connection
+                continue
+            W[u][v] = W[u][v] = not I[u] == I[v] # Symmetric (0 if same, 1 if different)
+    return W
+
+def manual_weights_abs(img, r=1):
+    N = img.shape[0] * img.shape[1]
+    W = np.zeros((N,N))
+
+    r = min(N//2, r) # ensure the r value doesn't exceed the axes of the outputs
+
+    I = img.flatten()
+    for u in range(N-1): # could use step size of r to improve speed?
+        end = min(u+r+1, N-1) # upper triangle, only traverse as far as needed
+        for v in range(u,end):
+            if np.linalg.norm(u-v) > r: # 4-way connection
+                continue
+            W[u][v] = W[u][v] = np.abs(I[u] - I[v]) # Symmetric
+    return W
+
+def intensity_weight_matrix(img):                                                                                 
+  weight = np.abs(np.float32(img.flatten()[:, np.newaxis]) - np.float32(img.flatten()[np.newaxis, :]))
+  W = np.exp(-weight/10)*255
+  return W
+
+def positional_weight_matrix(img): 
+  m,n = img.shape                                                                                                     
+  X, y = np.meshgrid(np.arange(m), np.arange(n))                                                                 
+  X = X.flatten()
+  Y = y.flatten()
+
+  distance = np.sqrt((X[:, np.newaxis] - X[np.newaxis, :])**2 + (Y[:, np.newaxis] - Y[np.newaxis, :])**2)
+  W = np.exp(-distance/5)
+  W =W*(W>0.58)
+  return W
+
+def intens_posit_wm(img):
+    """
+    No ratio intens and positonal version
+    """
+    return intensity_weight_matrix(img) * positional_weight_matrix(img)
+
 def plot_images(imgs, labels=None):
     num = len(imgs)
     ay = np.ceil(np.sqrt(num)).astype(int) # this way it will prefer rows rather than columns
