@@ -57,6 +57,47 @@ def intens_posit_wm(img):
     """
     return intensity_weight_matrix(img) * positional_weight_matrix(img)
 
+def weights_2(img):
+    channel = 1
+    n_row, n_col = img.shape
+    
+    N = n_row*n_col
+    W = np.zeros((N,N))
+    
+    r = 2
+    sigma_I = 0.2
+    sigma_X = 1
+    
+    for row_count, row in enumerate(img):
+        for col_count, v in enumerate(row):
+            index = row_count * n_col + col_count
+
+            search_w = r * 2 + 1
+            start_row = row_count - r
+            start_col = col_count - r
+
+            for d_row in range(search_w):
+                for d_col in range(search_w):
+                    new_row = start_row + d_row
+                    new_col = start_col + d_col
+                    dst = (new_row - row_count) ** 2 + (new_col - col_count) ** 2
+                    if 0 <= new_col < n_col and 0 <= new_row < n_row:
+                        if dst >= r ** 2:
+                            continue
+
+                        cur_index = int(new_row * n_col + new_col)
+
+                        F = img[row_count, col_count] - img[new_row, new_col]
+                        if channel == 3:
+                            F_diff = F[0]**2 + F[1]**2 + F[2]**2  
+                        else:
+                            F_diff = np.abs(F) #**2
+
+                        w = np.exp(-((F_diff / (sigma_I ** 2)) + (dst / (sigma_X ** 2))))
+                        W[index, cur_index] = w
+
+    return W
+
 def plot_images(imgs, labels=None, colmns=None):
     """
     imgs = [img1, img2]
