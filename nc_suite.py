@@ -142,7 +142,7 @@ def add_headers(
                 **text_kwargs,
             )
 
-def plot_images(imgs, labels=None, row_headers=None, col_headers=None, colmns=None):
+def plot_images(imgs, labels=None, row_headers=None, col_headers=None, colmns=None, title=None):
     """
     imgs = [img1, img2]
     labels = ['label1', 'label2']
@@ -157,18 +157,21 @@ def plot_images(imgs, labels=None, row_headers=None, col_headers=None, colmns=No
     else:
         ax = np.ceil(num / colmns).astype(int)
         ay = colmns
+        
     fig = plt.figure()
+    if title is not None:
+        fig.suptitle(title, fontsize=16)
+    
     for i in range(1, num+1):
         sub = fig.add_subplot(ax,ay,i)
-        if labels is None:
-            sub.set_title(f'{i}')
-        else:
+        if labels is not None:
             sub.set_title(f'{labels[i-1]}')
+            
         sub.axis('off')
         sub.imshow(imgs[i-1])
         
-    add_headers(fig, row_headers, col_headers)
-    plt.tight_layout()
+    add_headers(fig, row_headers=row_headers, col_headers=col_headers, rotate_row_headers=False)
+    # plt.tight_layout()
 
 def DW_matrices(graph):
     # using networkx graph to get D and W
