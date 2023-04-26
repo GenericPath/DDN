@@ -295,3 +295,42 @@ def _deterministic_vector_sign_flip(u):
     signs = np.sign(u[range(u.shape[0]), max_abs_rows])
     u *= signs[:, np.newaxis]
     return u
+
+def partition_by_step(input, D, W):
+    step = 50
+    pos = input.copy()
+    max_value = pos.max()
+    min_value = pos.min()
+    setp = (max_value - min_value) / step
+    dict = {}
+    for i in range(1, step):
+        partition = (min_value + i * setp)
+        temp_pos = pos < partition
+
+
+        k = (np.sum(W[temp_pos])) / (np.sum(D))
+        b = k / (1 - k)
+
+        y = temp_pos.astype('float64') * 2 - b * (temp_pos == False).astype('float64') * 2
+
+        ncut = (y @ (D - W) @ y.T) / (y @ D @ y.T)
+        dict[i] = ncut
+
+    min_partition = min_value + min(dict, key=dict.get) * setp
+    pos[pos >= min_partition] = 255
+    pos[pos < min_partition] = 0
+
+    pos = pos.reshape((28, 28))
+
+    return pos.astype('uint8')
+
+def partition_by_zero(input):
+    input = input.reshape((28,28)).astype('float64')   
+    input[input>0] = 255
+    return input.astype('uint8')
+
+def partition_by_avg(input):
+    return partition_by_zero(input - np.average(input))
+
+def partition_by_avg_nocut(input):
+    return input - np.average(input)
