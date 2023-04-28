@@ -37,10 +37,10 @@ num_pixels = n * n
 
 # Generate a random image with 3 color channels
 img_baby = cv2.imread("../data/test/3.jpg",0)
-x = cv2.resize(img_baby, (28,28))
+x = torch.tensor(cv2.resize(img_baby, (28,28)))
 
 # Generate a random target similarity matrix
-y = intens_posit_wm(img_baby)
+y = torch.tensor(intens_posit_wm(img_baby))
 
 # Create the CNN model
 model = SimilarityCNN()
