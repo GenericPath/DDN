@@ -21,6 +21,7 @@ class SimilarityCNN(nn.Module):
         self.fc = nn.Linear(256 * n * n, n * n)
 
     def forward(self, x):
+        x = torch.unsqueeze(x, 1) # in case there is no batch dimension
         x = torch.relu(self.conv1(x))
         x = torch.relu(self.conv2(x))
         x = torch.relu(self.conv3(x))
