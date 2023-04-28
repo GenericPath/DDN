@@ -15,7 +15,7 @@ wandb.init(project="pixelwise-similarity-matrix", name='baby_weight_test', mode=
 class SimilarityCNN(nn.Module):
     def __init__(self):
         super(SimilarityCNN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
         self.conv3 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
         self.fc = nn.Linear(256 * n * n, n * n)
@@ -37,10 +37,10 @@ num_pixels = n * n
 
 # Generate a random image with 3 color channels
 img_baby = cv2.imread("../data/test/3.jpg",0)
-x = torch.tensor(cv2.resize(img_baby, (28,28)))
+x = torch.tensor(cv2.resize(img_baby, (28,28)))/255
 
 # Generate a random target similarity matrix
-y = torch.tensor(intens_posit_wm(img_baby))
+y = torch.tensor(intens_posit_wm(img_baby))/255
 
 # Create the CNN model
 model = SimilarityCNN()
