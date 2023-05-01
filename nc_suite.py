@@ -327,6 +327,7 @@ def partition_by_step(input, D, W):
 def partition_by_zero(input):
     input = input.reshape((28,28)).astype('float64')   
     input[input>0] = 255
+    input[input<=0] = 0
     return input.astype('uint8')
 
 def partition_by_avg(input):
