@@ -41,17 +41,32 @@ def get_images(name='baby', length=1, size=(28,28)):
         # TODO: make a check func in generate_dataset
         import glob
         from generate_dataset import make_texture_colour_image
+        
         cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
-        folder_path = './data/textures/Normalized Brodatz'
+        folder_path = 'data/textures/Normalized Brodatz'
         extension = '.tif'
         imgs = glob(os.path.join(folder_path,'*'+extension))
         
-        outputs = []
-        for i in range(length):
-            outputs.append(make_texture_colour_image(imgs, cmaps))
-        # TODO: check these outputs... 
-        # TODO: do the same as above with working within a pkl file instead of images to disk... (currently generated every time)
-        return outputs 
+        path = 'data/TEXCOLv1.pkl'
+        if os.path.isfile(path):
+            with open (path, 'rb') as fp:
+                outputs = pickle.load(fp)
+                diff = length - len(outputs[0])
+                if diff < 0:
+                    return outputs[:,:length] # slice across each to length
+                else:
+                    for i in range(diff):
+                        outputs.append(make_texture_colour_image(imgs, cmaps))
+                    with open(path, 'wb') as fp:
+                        pickle.dump(outputs, fp) # TODO: single loop instead of two elses
+                    return outputs
+        else:
+            outputs = []
+            for i in range(length):
+                outputs.append(make_texture_colour_image(imgs, cmaps))
+            with open(path, 'wb') as fp:
+                pickle.dump(outputs, fp)
+            return outputs
     
     
 def create_bw(length, size, ratio=None): # TODO: enforce a ratio between the B and W portions of BW image...
