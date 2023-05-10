@@ -36,8 +36,22 @@ def get_images(name='baby', length=1, size=(28,28)):
                 pickle.dump(imgs, fp)
             return imgs
     elif name == 'TEXCOL':
-        # TODO: similar to BW but for the texture colour ones :)
-        return 
+        # currently doesnt check if the texture stuff isnt present...
+        # TODO: check and maybe put it all into generate_datasets stuff?
+        # TODO: make a check func in generate_dataset
+        import glob
+        from generate_dataset import make_texture_colour_image
+        cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
+        folder_path = './data/textures/Normalized Brodatz'
+        extension = '.tif'
+        imgs = glob(os.path.join(folder_path,'*'+extension))
+        
+        outputs = []
+        for i in range(length):
+            outputs.append(make_texture_colour_image(imgs, cmaps))
+        # TODO: check these outputs... 
+        # TODO: do the same as above with working within a pkl file instead of images to disk... (currently generated every time)
+        return outputs 
     
     
 def create_bw(length, size, ratio=None): # TODO: enforce a ratio between the B and W portions of BW image...
