@@ -154,7 +154,7 @@ def plot_images(imgs, labels=None, row_headers=None, col_headers=None, colmns=No
     
     num = len(imgs)
     # Calculate the given number of subplots, or use colmns count to get a specific output
-    if colmns == None:
+    if colmns is None:
         ay = np.ceil(np.sqrt(num)).astype(int) # this way it will prefer rows rather than columns
         ax = np.rint(np.sqrt(num)).astype(int)
     else:
