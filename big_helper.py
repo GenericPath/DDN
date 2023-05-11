@@ -3,6 +3,22 @@ import numpy as np
 # different valid image sets
 VALID_DATASETS = ['baby', 'MNIST', 'BW', 'TEXCOL']
 def get_images(name='baby', length=1, size=(28,28)):
+    """Get images from datasets
+
+    Args:
+    ----------
+        name (str, optional): name of dataset to be get. Defaults to 'baby'.\n
+        length (int, optional): number of images from the dataset to get. Defaults to 1.\n
+        size (tuple, optional): size of the images to get, will resize if needed. Defaults to (28,28).
+
+    Raises:
+    ----------
+        ValueError: if name is not one of 'baby', 'MNIST', 'BW', 'TEXCOL'
+
+    Returns:
+    ----------
+        [img1, img2]: list of images (or suitable type of list)
+    """
     if name not in VALID_DATASETS:
         raise ValueError(f"name must be one of {VALID_DATASETS}")
     
@@ -19,8 +35,12 @@ def get_images(name='baby', length=1, size=(28,28)):
         imgs = [resize(np.asarray(mnist[i][0]), size) for i in range(length)]
         return imgs
     
-    import os, pickle
+    import os
+    import pickle
     if name == 'BW':
+        # TODO: resize images
+        # TODO: better params for creating of images
+        # TODO: enforce a ratio of white/black?
         path = 'data/BWv1.pkl'
         if os.path.isfile(path):
             with open (path, 'rb') as fp:
@@ -29,17 +49,17 @@ def get_images(name='baby', length=1, size=(28,28)):
                 if diff < 0:
                     return imgs[:length]
                 else:
-                    return imgs + create_bw(diff, size)
+                    imgs = imgs + create_bw(diff, size) # append new images
         else:
-            imgs = create_bw(length, size)
-            with open(path, 'wb') as fp:
-                pickle.dump(imgs, fp)
-            return imgs
+            imgs = create_bw(length, size) # or create all images
+        with open(path, 'wb') as fp:
+            pickle.dump(imgs, fp) # will truncate if neccessary
+        return imgs
     elif name == 'TEXCOL':
-        # currently doesnt check if the texture stuff isnt present...
-        # TODO: check and maybe put it all into generate_datasets stuff?
-        # TODO: make a check func in generate_dataset
-        import glob
+        # TODO: resize images
+        # TODO: better params for creating of images
+        # TODO: check if texture folders is present (download if neccessary)
+        from glob import glob
         from generate_dataset import make_texture_colour_image
         
         cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
@@ -51,25 +71,21 @@ def get_images(name='baby', length=1, size=(28,28)):
         if os.path.isfile(path):
             with open (path, 'rb') as fp:
                 outputs = pickle.load(fp)
-                diff = length - len(outputs[0])
+                diff = length - len(outputs)
                 if diff < 0:
-                    return outputs[:,:length] # slice across each to length
+                    return outputs[:length] # slice across each to length
                 else:
-                    for i in range(diff):
-                        outputs.append(make_texture_colour_image(imgs, cmaps))
-                    with open(path, 'wb') as fp:
-                        pickle.dump(outputs, fp) # TODO: single loop instead of two elses
-                    return outputs
-        else:
+                    length = diff # will create diff number below
+        else: # do we have some existing?
             outputs = []
-            for i in range(length):
-                outputs.append(make_texture_colour_image(imgs, cmaps))
-            with open(path, 'wb') as fp:
-                pickle.dump(outputs, fp)
-            return outputs
+            
+        for i in range(length): # create all required images
+            outputs.append(make_texture_colour_image(imgs, cmaps))
+        with open(path, 'wb') as fp:
+            pickle.dump(outputs, fp)
+        return outputs
     
-    
-def create_bw(length, size, ratio=None): # TODO: enforce a ratio between the B and W portions of BW image...
+def create_bw(length, size, ratio=None):
     import random
     
     outputs = []
@@ -83,7 +99,6 @@ def create_bw(length, size, ratio=None): # TODO: enforce a ratio between the B a
         outputs.append(answer)
         
     return outputs 
-
 
 def add_headers(
     fig,
@@ -162,9 +177,11 @@ def plot_images(imgs, labels=None, row_headers=None, col_headers=None, colmns=No
     # plt.tight_layout()
 
 # different weighting functions
-# intens, position, affinity, intens * position...
+def get_weights(imgs, name='intensity'):
+    # intens, position, affinity, intens * position...
+    # different weightings with W/np.max(W) (e.g. do we normalize the weights before doing laplace?)
+    return imgs
 
-# different weightings with W/np.max(W) (e.g. do we normalize the weights before doing laplace?)
 
 # different laplace solvers
 # cheap, expensive, symmetric/none...
