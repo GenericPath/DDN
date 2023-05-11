@@ -178,6 +178,11 @@ def plot_images(imgs, labels=None, row_headers=None, col_headers=None, colmns=No
 
 # different weighting functions
 def get_weights(imgs, name='intensity'):
+    # TODO: use these :)
+    from nc_suite import manual_weights_binary, manual_weights_abs # test radius param
+    from nc_suite import intensity_weight_matrix, positional_weight_matrix, intens_posit_wm
+    from nc_suite import weights_2 # test radius and sigmas..
+    from nc_suite import weight_tot, weight_int, weight_dist # test radius, sigmaI, sigmaX TODO: verify these ones work (does the formula make sense)
     # intens, position, affinity, intens * position...
     # different weightings with W/np.max(W) (e.g. do we normalize the weights before doing laplace?)
     return imgs

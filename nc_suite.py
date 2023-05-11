@@ -5,6 +5,43 @@ from scipy.sparse import linalg
 import networkx as nx
 
 
+def weight_tot(img, radius, sigmaI, sigmaX):
+    import math
+    X,Y = img.shape
+    W = np.zeros((X*X, Y*Y))
+    for x in range(X):
+        for y in range(Y):
+            for dx in range(max(0,x-radius), min(X,x+radius)):
+                for dy in range(max(0,y-radius), min(Y,y+radius)):
+                    # W = compare (x,y) with (d,y)
+                    W[x*X + dx][y*Y + dy] = np.exp(-np.abs(img[x][y]-img[dx][dy])/sigmaI) # intensity
+                    W[x*X + dx][y*Y + dy] *= np.exp(-np.abs(math.dist((x,y),(dx,dy)))/sigmaX) # distance
+                    continue
+    return W
+
+def weight_int(img, radius, sigmaI):
+    X,Y = img.shape
+    W = np.zeros((X*X, Y*Y))
+    for x in range(X):
+        for y in range(Y):
+            for dx in range(max(0,x-radius), min(X,x+radius)):
+                for dy in range(max(0,y-radius), min(Y,y+radius)):
+                    W[x*X + dx][y*Y + dy] = np.exp(-np.abs(img[x][y]-img[dx][dy])/sigmaI) # intensity
+                    continue
+    return W
+
+def weight_dist(img, radius, sigmaX):
+    import math
+    X,Y = img.shape
+    W = np.zeros((X*X, Y*Y))
+    for x in range(X):
+        for y in range(Y):
+            for dx in range(max(0,x-radius), min(X,x+radius)):
+                for dy in range(max(0,y-radius), min(Y,y+radius)):
+                    W[x*X + dx][y*Y + dy] = np.exp(-np.abs(math.dist((x,y),(dx,dy)))/sigmaX) # distance
+                    continue
+    return W
+
 def manual_weights_binary(img, r=1):
     N = img.shape[0] * img.shape[1]
     W = np.zeros((N,N))
@@ -57,16 +94,12 @@ def intens_posit_wm(img):
     """
     return intensity_weight_matrix(img) * positional_weight_matrix(img)
 
-def weights_2(img):
+def weights_2(img, r=2, sigma_I=0.2, sigma_X=1):
     channel = 1
     n_row, n_col = img.shape
     
     N = n_row*n_col
     W = np.zeros((N,N))
-    
-    r = 2
-    sigma_I = 0.2
-    sigma_X = 1
     
     for row_count, row in enumerate(img):
         for col_count, v in enumerate(row):
