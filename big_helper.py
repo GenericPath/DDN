@@ -25,7 +25,7 @@ def get_images(name='baby', length=1, size=(28,28)):
     from skimage.io import imread
     from skimage.transform import resize
     if name == 'baby':
-        img_baby = imread("data/test/3.jpg",1) # hardcoded grayscale
+        img_baby = imread("data/test/3.jpg",0) # hardcoded colour, make bw outside
         img_baby = resize(img_baby, size)
         return [img_baby]
     
