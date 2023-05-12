@@ -4,25 +4,34 @@ import matplotlib.pyplot as plt
 from scipy.sparse import linalg
 import networkx as nx
 
-def colour_diff(color1, color2):
-    # FROM CHATGPT
-    return np.sqrt(np.sum((color1 - color2)**2))
+def colour_diff(image, pixel1, pixel2):
+    # # Extract the color values of the two pixels
+    # two approaches for colour vs black and white
+    if len(image.shape) == 2:
+        intensity1 = image[pixel1[0], pixel1[1]]
+        intensity2 = image[pixel2[0], pixel2[1]]
+        return np.abs(intensity1 - intensity2)
+    else:
+        color1 = image[pixel1[0], pixel1[1], :]
+        color2 = image[pixel2[0], pixel2[1], :]
+        return np.sqrt(np.sum((color1 - color2)**2))
 
-def texture_diff(image, neighborhood_size, pixel1, pixel2):
-    from skimage import feature
-    # FROM CHATGPT
-    # Define the texture neighborhood
-    neighborhood_size = 15
-    # Extract texture features around pixel 1
-    texture1 = feature.local_binary_pattern(image[pixel1[0]-neighborhood_size:pixel1[0]+neighborhood_size,
-                                                    pixel1[1]-neighborhood_size:pixel1[1]+neighborhood_size],
-                                            8, 1, method='uniform')
-    # Extract texture features around pixel 2
-    texture2 = feature.local_binary_pattern(image[pixel2[0]-neighborhood_size:pixel2[0]+neighborhood_size,
-                                                    pixel2[1]-neighborhood_size:pixel2[1]+neighborhood_size],
-                                            8, 1, method='uniform')
+def texture_diff(image, pixel1, pixel2, neighborhood_size):
+    # was previously using some stuff from skimage.feature, but no more
+    # Extract the neighborhood around the first pixel
+    x1, y1 = pixel1
+    neighborhood1 = image[x1-neighborhood_size:x1+neighborhood_size+1,
+                              y1-neighborhood_size:y1+neighborhood_size+1]
+    # Extract the neighborhood around the second pixel
+    x2, y2 = pixel2
+    neighborhood2 = image[x2-neighborhood_size:x2+neighborhood_size+1,
+                              y2-neighborhood_size:y2+neighborhood_size+1]
     # Calculate the texture difference
-    return np.sum(np.abs(texture1 - texture2))
+    if len(image.shape) == 2:  # Grayscale
+        texture_diff = np.abs(neighborhood1 - neighborhood2).mean()
+    else:  # Colour
+        texture_diff = np.sqrt(np.sum((neighborhood1 - neighborhood2)**2, axis=(0,1))).mean()
+    return texture_diff
 
 def generic_weight(img, radius, func, sigmaI, sigmaX):
     """Generic function for weighting, takes a func which computes difference measure
@@ -46,12 +55,13 @@ def generic_weight(img, radius, func, sigmaI, sigmaX):
             for dx in range(max(0,x-radius), min(X,x+radius)):
                 for dy in range(max(0,y-radius), min(Y,y+radius)):
                     # W = compare (x,y) with (d,y)
-                    W[x*X + dx][y*Y + dy] = np.exp(-np.abs(func(img[x][y], img[dx][dy]))/sigmaI) # function to weight them
+                    W[x*X + dx][y*Y + dy] = np.exp(-np.abs(func(img, (x,y),(dx,dy)))/sigmaI) # function to weight them
                     W[x*X + dx][y*Y + dy] *= np.exp(-np.abs(math.dist((x,y),(dx,dy)))/sigmaX) # distance
                     continue
     return W
 
 def generic_weight_noexp(img, radius, func, sigmaX):
+    # Same as above, without the np.exp part of it for the weighting function :)
     import math
     X,Y = img.shape
     W = np.zeros((X*X, Y*Y))
@@ -60,8 +70,21 @@ def generic_weight_noexp(img, radius, func, sigmaX):
             for dx in range(max(0,x-radius), min(X,x+radius)):
                 for dy in range(max(0,y-radius), min(Y,y+radius)):
                     # W = compare (x,y) with (d,y)
-                    W[x*X + dx][y*Y + dy] = func(img[x][y], img[dx][dy]) # function to weight them
+                    W[x*X + dx][y*Y + dy] = func(img, (x,y),(dx,dy)) # function to weight them
                     W[x*X + dx][y*Y + dy] *= np.exp(-np.abs(math.dist((x,y),(dx,dy)))/sigmaX) # distance
+                    continue
+    return W
+
+def generic_weight_rawfunc(img, radius, func):
+    # Same as above, without the np.exp part of it for the weighting function :)
+    X,Y = img.shape
+    W = np.zeros((X*X, Y*Y))
+    for x in range(X):
+        for y in range(Y):
+            for dx in range(max(0,x-radius), min(X,x+radius)):
+                for dy in range(max(0,y-radius), min(Y,y+radius)):
+                    # W = compare (x,y) with (d,y)
+                    W[x*X + dx][y*Y + dy] = func(img, (x,y),(dx,dy)) # function to weight them
                     continue
     return W
 

@@ -193,11 +193,16 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
     """
     from functools import partial
     # TODO: use these :)
-    from nc_suite import manual_weights_binary, manual_weights_abs # test radius param
-    from nc_suite import weights_2 # test radius and sigmas..
+    from nc_suite import manual_weights_binary, manual_weights_abs # radius
+    from nc_suite import weights_2 # radius, sigmas
     from nc_suite import intensity_weight_matrix, positional_weight_matrix, intens_posit_wm
     # TODO: verify these ones work (does the formula make sense)
-    from nc_suite import weight_tot, weight_int, weight_dist # test radius, sigmaI, sigmaX 
+    from nc_suite import weight_tot, weight_int, weight_dist # test radius, sigmas 
+    from nc_suite import generic_weight, generic_weight_noexp, generic_weight_rawfunc # test params
+    from nc_suite import colour_diff, texture_diff
+    
+    # colour_func = partial()
+    texture_func = partial(texture_diff, neighborhood_size=radius)
     
     choices = [partial(manual_weights_binary, r=radius),                            # 0
                partial(manual_weights_abs, r=radius),                               # 1
@@ -207,10 +212,18 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
                        intens_posit_wm,                                             # 5
                 partial(weight_tot,radius=radius, sigmaI=sigmaI, sigmaX=sigmaX),    # 6
                 partial(weight_int,radius=radius, sigmaI=sigmaI),                   # 7
-                partial(weight_dist,radius=radius, sigmaX=sigmaX)]                  # 8
-    
-    # TODO: add generic_weight_noexp, and generic_weight with different partial funcs using
-    #   texture_diff and colour_diff which in turn may need partial funcs
+                partial(weight_dist,radius=radius, sigmaX=sigmaX),                  # 8
+                partial(generic_weight, radius=radius, func=texture_func,           # 9
+                                        sigmaI=sigmaI, sigmaX=sigmaX),
+                partial(generic_weight, radius=radius, func=colour_diff,            # 10
+                                        sigmaI=sigmaI, sigmaX=sigmaX),
+                partial(generic_weight_noexp, radius=radius, func=texture_func,     # 11
+                                        sigmaX=sigmaX),
+                partial(generic_weight_noexp, radius=radius, func=colour_diff,      # 12
+                                        sigmaX=sigmaX),
+                partial(generic_weight_rawfunc, radius=radius, func=texture_func),  # 13
+                partial(generic_weight_rawfunc, radius=radius, func=colour_diff),   # 14
+                ]
     
     func = choices[choice]
     W = func(img)
