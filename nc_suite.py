@@ -4,6 +4,66 @@ import matplotlib.pyplot as plt
 from scipy.sparse import linalg
 import networkx as nx
 
+def colour_diff(color1, color2):
+    # FROM CHATGPT
+    return np.sqrt(np.sum((color1 - color2)**2))
+
+def texture_diff(image, neighborhood_size, pixel1, pixel2):
+    from skimage import feature
+    # FROM CHATGPT
+    # Define the texture neighborhood
+    neighborhood_size = 15
+    # Extract texture features around pixel 1
+    texture1 = feature.local_binary_pattern(image[pixel1[0]-neighborhood_size:pixel1[0]+neighborhood_size,
+                                                    pixel1[1]-neighborhood_size:pixel1[1]+neighborhood_size],
+                                            8, 1, method='uniform')
+    # Extract texture features around pixel 2
+    texture2 = feature.local_binary_pattern(image[pixel2[0]-neighborhood_size:pixel2[0]+neighborhood_size,
+                                                    pixel2[1]-neighborhood_size:pixel2[1]+neighborhood_size],
+                                            8, 1, method='uniform')
+    # Calculate the texture difference
+    return np.sum(np.abs(texture1 - texture2))
+
+def generic_weight(img, radius, func, sigmaI, sigmaX):
+    """Generic function for weighting, takes a func which computes difference measure
+
+    Args:
+        img (Array): img to compute all weights for
+        radius (int): The radius of neighbourhood to compute weights for
+        func (function): Used to compute the different between two pixels, 
+                        use partial for additional params
+        sigmaI (float): weighting of the function
+        sigmaX (float): weighting of spatial location
+
+    Returns:
+        Array: W, weights matrix. shape: (X**2, Y**2)
+    """
+    import math
+    X,Y = img.shape
+    W = np.zeros((X*X, Y*Y))
+    for x in range(X):
+        for y in range(Y):
+            for dx in range(max(0,x-radius), min(X,x+radius)):
+                for dy in range(max(0,y-radius), min(Y,y+radius)):
+                    # W = compare (x,y) with (d,y)
+                    W[x*X + dx][y*Y + dy] = np.exp(-np.abs(func(img[x][y], img[dx][dy]))/sigmaI) # function to weight them
+                    W[x*X + dx][y*Y + dy] *= np.exp(-np.abs(math.dist((x,y),(dx,dy)))/sigmaX) # distance
+                    continue
+    return W
+
+def generic_weight_noexp(img, radius, func, sigmaX):
+    import math
+    X,Y = img.shape
+    W = np.zeros((X*X, Y*Y))
+    for x in range(X):
+        for y in range(Y):
+            for dx in range(max(0,x-radius), min(X,x+radius)):
+                for dy in range(max(0,y-radius), min(Y,y+radius)):
+                    # W = compare (x,y) with (d,y)
+                    W[x*X + dx][y*Y + dy] = func(img[x][y], img[dx][dy]) # function to weight them
+                    W[x*X + dx][y*Y + dy] *= np.exp(-np.abs(math.dist((x,y),(dx,dy)))/sigmaX) # distance
+                    continue
+    return W
 
 def weight_tot(img, radius, sigmaI, sigmaX):
     import math

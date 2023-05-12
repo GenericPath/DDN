@@ -25,7 +25,7 @@ def get_images(name='baby', length=1, size=(28,28)):
     from skimage.io import imread
     from skimage.transform import resize
     if name == 'baby':
-        img_baby = imread("data/test/3.jpg",0)
+        img_baby = imread("data/test/3.jpg",1) # hardcoded grayscale
         img_baby = resize(img_baby, size)
         return [img_baby]
     
@@ -177,20 +177,52 @@ def plot_images(imgs, labels=None, row_headers=None, col_headers=None, colmns=No
     # plt.tight_layout()
 
 # different weighting functions
-def get_weights(imgs, name='intensity'):
+def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
+    """For an image, get the weights matrix W for the image
+
+    Args:
+        img (Array): the img to convert to weights
+        choice (int, optional): Which weight func to use, instead of names uses number system. Defaults to 1.
+        
+        choices correspond to: 
+        [manual_weights_binary, manual_weights_abs, intensity_weight_matrix, weights_2,
+        positional_weight_matrix, intens_posit_wm, weight_tot, weight_int, weight_dist]
+
+    Returns:
+        Array: W, weights matrix (or affinity matrix depending on who you ask :) )
+    """
+    from functools import partial
     # TODO: use these :)
     from nc_suite import manual_weights_binary, manual_weights_abs # test radius param
-    from nc_suite import intensity_weight_matrix, positional_weight_matrix, intens_posit_wm
     from nc_suite import weights_2 # test radius and sigmas..
-    from nc_suite import weight_tot, weight_int, weight_dist # test radius, sigmaI, sigmaX TODO: verify these ones work (does the formula make sense)
-    # intens, position, affinity, intens * position...
-    # different weightings with W/np.max(W) (e.g. do we normalize the weights before doing laplace?)
-    return imgs
+    from nc_suite import intensity_weight_matrix, positional_weight_matrix, intens_posit_wm
+    # TODO: verify these ones work (does the formula make sense)
+    from nc_suite import weight_tot, weight_int, weight_dist # test radius, sigmaI, sigmaX 
+    
+    choices = [partial(manual_weights_binary, r=radius),                            # 0
+               partial(manual_weights_abs, r=radius),                               # 1
+                       intensity_weight_matrix,                                     # 2
+                partial(weights_2,r=radius, sigma_I=sigmaI, sigma_X=sigmaX),        # 3
+                       positional_weight_matrix,                                    # 4
+                       intens_posit_wm,                                             # 5
+                partial(weight_tot,radius=radius, sigmaI=sigmaI, sigmaX=sigmaX),    # 6
+                partial(weight_int,radius=radius, sigmaI=sigmaI),                   # 7
+                partial(weight_dist,radius=radius, sigmaX=sigmaX)]                  # 8
+    
+    # TODO: add generic_weight_noexp, and generic_weight with different partial funcs using
+    #   texture_diff and colour_diff which in turn may need partial funcs
+    
+    func = choices[choice]
+    W = func(img)
+    # TODO: W = W / np.max(W), but might be better as a pre-process func... :)
+    return W
 
 
 # different laplace solvers
 # cheap, expensive, symmetric/none...
 # how to handle 0's in D? or... how to handle 0's in d?
+
+# Also, specify different pre, eig, post as a list of functions which get applied by looping..
 
 # different eigensolvers
 # initially try for just one eig solver?
