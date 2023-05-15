@@ -262,6 +262,7 @@ def get_eigensolvers():
     
     
     # generalized eigenvalue problem: func(A,B)
+    # https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix#Generalized_eigenvalue_problem
     # Av = λBv 
     # for vector v with some λ. then v is the generalized eigenvector of A and B
     # also B^-1 Av = λv if B is invertible (standard eigenproblem)
