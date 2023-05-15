@@ -199,7 +199,7 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
     # TODO: verify these ones work (does the formula make sense)
     from nc_suite import weight_tot, weight_int, weight_dist # test radius, sigmas 
     from nc_suite import generic_weight, generic_weight_noexp, generic_weight_rawfunc # test params
-    from nc_suite import colour_diff, texture_diff
+    from nc_suite import colour_diff, texture_diff, manual_weights_abs_upper
     
     # colour_func = partial()
     texture_func = partial(texture_diff, neighborhood_size=radius)
@@ -223,6 +223,7 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
                                         sigmaX=sigmaX),
                 partial(generic_weight_rawfunc, radius=radius, func=texture_func),  # 13
                 partial(generic_weight_rawfunc, radius=radius, func=colour_diff),   # 14
+                partial(manual_weights_abs_upper, r=radius),                        # 15
                 ]
     
     func = choices[choice]
@@ -230,6 +231,8 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
     # TODO: W = W / np.max(W), but might be better as a pre-process func... :)
     return W
 
+def norm_weights(W):
+    return W/np.max(W)
 
 # different laplace solvers
 # cheap, expensive, symmetric/none...
