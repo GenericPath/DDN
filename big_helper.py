@@ -231,8 +231,77 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
     # TODO: W = W / np.max(W), but might be better as a pre-process func... :)
     return W
 
+def get_eigensolvers():
+    import scipy.linalg as linalg
+    import scipy.sparse.linalg as sparse
+    
+    from collections import OrderedDict
+    from functools import partial
+    
+    
+    upper = True
+    
+    # standard eigenvalue problem: func(A)
+    # Av = λv 
+    # (e.g. we invert B onto A ourselves)
+    eigs_standard = OrderedDict( # np = np_, scipy no prefix, scipy sparse = sp_
+        # not neccessarily ordered
+        np_eig = np.linalg.eig,
+        # ordered
+        np_eigh_upper = partial(np.linalg.eigh, UPLO = 'U' if upper else 'L'),
+        eig = partial(linalg.eig, left=not upper, right=upper),
+        eigh = partial(linalg.eigh, check_finite=False, lower=not upper),
+        
+        eigh_ev = partial(linalg.eigh, check_finite=False, lower=not upper, driver='ev'), # symmetric QR
+        eigh_evd = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evd'), # faster, more memory
+        eigh_evr = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evr'), # generally best
+        eigh_evx = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx'), # may perform worse (low eigs asked)
+        eigh_evx_05 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx', subset_by_value=[0,5]), # may perform worse (low eigs asked)
+        eigh_evx_inf10 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx', subset_by_value=[-np.inf,10]), # may perform worse (low eigs asked)
+    )
+    
+    
+    # generalized eigenvalue problem: func(A,B)
+    # Av = λBv 
+    # for vector v with some λ. then v is the generalized eigenvector of A and B
+    # also B^-1 Av = λv if B is invertible (standard eigenproblem)
+    eigs_generalized = OrderedDict( # all begin with g to specify generalized
+        g_eig = partial(linalg.eig, left=not upper, right=upper),
+        g_eigh_cff = partial(linalg.eigh, check_finite=False),
+        # type 1 = a @ v = w @ b @ v     -- type 1 is most applicable here
+        g_eigh_gv = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gv', type=1),
+        g_eigh_gvd = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvd', type=1),
+        g_eigh_gvx = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1), # subset only
+        g_eigh_gvx_05 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[0,5]), # subset only        
+    )
+    
+    
+    
+    return eigs_standard, eigs_generalized
+
 def norm_weights(W):
     return W/np.max(W)
+
+def deterministic_vector_sign_flip(u):
+    # from https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/utils/extmath.py#L1097
+    max_abs_rows = np.argmax(np.abs(u))
+    signs = np.sign(u[max_abs_rows])
+    u *= signs # except sometimes this still flips between the two :)
+    return u
+
+def generic_solve(W, laplace,solver):
+    L = laplace(np.copy(W))
+    _, eig_vectors = solver(L)
+    
+    output = eig_vectors[:, 1]
+    deterministic_vector_sign_flip(output)
+    output = output.reshape(*np.sqrt(W.shape).astype(int)) 
+    return output
+
+def generic_solve_vals(W, laplace,solver):
+    L = laplace(np.copy(W))
+    vals, _ = solver(L)
+    return vals
 
 # different laplace solvers
 # cheap, expensive, symmetric/none...
