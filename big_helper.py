@@ -241,6 +241,9 @@ def get_eigensolvers():
     
     upper = True
     
+    np.random.seed(0)
+    # TODO: add sparse ones :)
+    
     # standard eigenvalue problem: func(A)
     # Av = λv 
     # (e.g. we invert B onto A ourselves)
@@ -272,8 +275,8 @@ def get_eigensolvers():
         # type 1 = a @ v = w @ b @ v     -- type 1 is most applicable here
         g_eigh_gv = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gv', type=1),
         g_eigh_gvd = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvd', type=1),
-        g_eigh_gvx = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1), # subset only
         g_eigh_gvx_05 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[0,5]), # subset only        
+        g_eigh_gvx_inf10 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[-np.inf,10]), # subset only
     )
     
     
