@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 # different valid image sets
 VALID_DATASETS = ['baby', 'MNIST', 'BW', 'TEXCOL']
@@ -150,8 +151,6 @@ def plot_images(imgs, labels=None, row_headers=None, col_headers=None, colmns=No
     labels = ['label1', 'label2']
     colmns = 2 (so will be a 1x2 size display)
     """
-    import matplotlib.pyplot as plt
-    
     num = len(imgs)
     # Calculate the given number of subplots, or use colmns count to get a specific output
     if colmns is None:
@@ -200,6 +199,7 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
     from nc_suite import weight_tot, weight_int, weight_dist # test radius, sigmas 
     from nc_suite import generic_weight, generic_weight_noexp, generic_weight_rawfunc # test params
     from nc_suite import colour_diff, texture_diff, manual_weights_abs_upper
+    # TODO: once one is confirmed working, remove others and bring its implementation into this file
     
     # colour_func = partial()
     texture_func = partial(texture_diff, neighborhood_size=radius)
@@ -259,7 +259,7 @@ def get_eigensolvers():
         eigh_evd = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evd'), # faster, more memory
         eigh_evr = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evr'), # generally best
         eigh_evx = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx'), # may perform worse (low eigs asked)
-        eigh_evx_05 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx', subset_by_value=[0,5]), # may perform worse (low eigs asked)
+        eigh_evx_inf5 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx', subset_by_value=[-np.inf,5]), # may perform worse (low eigs asked)
         eigh_evx_inf10 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx', subset_by_value=[-np.inf,10]), # may perform worse (low eigs asked)
     )
     
@@ -275,13 +275,28 @@ def get_eigensolvers():
         # type 1 = a @ v = w @ b @ v     -- type 1 is most applicable here
         g_eigh_gv = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gv', type=1),
         g_eigh_gvd = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvd', type=1),
-        g_eigh_gvx_05 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[0,5]), # subset only        
+        g_eigh_gvx_inf5 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[-np.inf,5]), # subset only        
         g_eigh_gvx_inf10 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[-np.inf,10]), # subset only
+        g_eigh_gvx_inf100 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[-np.inf,100]), # subset only
     )
     
     
     
     return eigs_standard, eigs_generalized
+
+def plot_range(values, ylabel):
+    # Symmetric laplacian to get only positive eigenvalues... both output cuts but one is correct math
+    fig, ax = plt.subplots()
+    # iterate over each array in the list and create a scatter plot
+    for i, val in enumerate(values):
+        x = [i] * len(val)
+        colors = ['r' if v > 0 else 'g' for v in val]
+        ax.scatter(x, val, c=colors)
+    # set axis labels and show the plot
+    plt.xticks(range(len(values)), range(len(values)))
+    plt.xlabel('Image #')
+    plt.ylabel(ylabel)
+    plt.show()
 
 def norm_weights(W):
     return W/np.max(W)
@@ -292,6 +307,26 @@ def deterministic_vector_sign_flip(u):
     signs = np.sign(u[max_abs_rows])
     u *= signs # except sometimes this still flips between the two :)
     return u
+
+def argmin2(array):
+    # O(n) to find second smallest argmin, instead of sorting O(n^2)
+    min1 = np.inf
+    min2 = np.inf
+    min_idx1 = min_idx2 = i = 0
+    n = array.shape[0]
+    
+    for i in range(n):
+        x = array[i]
+        if x < min1:
+            min2 = min1
+            min_idx2 = min_idx1
+            min1 = x
+            min_idx1 = i
+        elif x > min1 and x < min2:
+            min2 = x
+            min_idx2 = i
+
+    return min_idx2
 
 def generic_solve(W, laplace,solver):
     L = laplace(np.copy(W))
