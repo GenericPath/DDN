@@ -133,7 +133,7 @@ def manual_weights_binary(img, r=1):
 
     I = img.flatten()
     for u in range(N-1): # could use step size of r to improve speed?
-        end = min(u+r+1, N-1) # upper triangle, only traverse as far as needed
+        end = min(u+r+1, N) # upper triangle, only traverse as far as needed
         for v in range(u,end):
             if np.linalg.norm(u-v) > r: # 4-way connection
                 continue
@@ -148,8 +148,8 @@ def manual_weights_abs(img, r=1):
 
     I = img.flatten()
     for u in range(N-1): # could use step size of r to improve speed?
-        end = min(u+r+1, N-1) # upper triangle, only traverse as far as needed
-        for v in range(u,end):
+        end = min(u+r+1, N) # upper triangle, only traverse as far as needed
+        for v in range(u,end): # end is exclusive bound
             if np.linalg.norm(u-v) > r: # 4-way connection
                 continue
             W[u][v] = W[v][u] = np.abs(I[u] - I[v]) # Symmetric
@@ -163,7 +163,7 @@ def manual_weights_abs_upper(img, r=1):
 
     I = img.flatten()
     for u in range(N-1): # could use step size of r to improve speed?
-        end = min(u+r+1, N-1) # upper triangle, only traverse as far as needed
+        end = min(u+r+1, N) # upper triangle, only traverse as far as needed
         for v in range(u,end):
             if np.linalg.norm(u-v) > r: # 4-way connection
                 continue
