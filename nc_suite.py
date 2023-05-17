@@ -4,6 +4,31 @@ import matplotlib.pyplot as plt
 from scipy.sparse import linalg
 import networkx as nx
 
+import math
+
+def test_cost(a,b, sigma):
+    cost = 100 * math.exp(- pow(a - b, 2) / (2 * pow(sigma, 2))) # TODO check if needs to be abs of (a-b)
+    # TODO: version with *= 1/dist(a,b) type of thing
+    # like in https://www.csd.uwo.ca/~yboykov/Papers/ijcv06.pdf
+    return cost
+
+def final_weight_test(img, r, sigma, cost=test_cost):
+    # following from https://github.com/julie-jiang/image-segmentation/blob/master/imagesegmentation.py
+    X,Y = img.shape
+    N = X*X
+    W = np.zeros((N, N))
+    
+    for i in range(X):
+        for j in range(Y):
+            x = i * Y + j
+            if i + 1 < X: # pixel below # TODO: understand what these ifs are doing?
+                y = (i + 1) * Y + j
+                W[x][y] = W[y][x] = cost(img[i][j], img[i + 1][j], sigma)
+            if j + 1 < Y: # pixel to the right
+                y = i * Y + j + 1
+                W[x][y] = W[y][x] = cost(img[i][j], img[i][j + 1], sigma)
+    return W
+
 def colour_diff(image, pixel1, pixel2):
     # # Extract the color values of the two pixels
     # two approaches for colour vs black and white
@@ -47,7 +72,6 @@ def generic_weight(img, radius, func, sigmaI, sigmaX):
     Returns:
         Array: W, weights matrix. shape: (X**2, Y**2)
     """
-    import math
     X,Y = img.shape
     W = np.zeros((X*X, Y*Y))
     for x in range(X):
@@ -62,7 +86,6 @@ def generic_weight(img, radius, func, sigmaI, sigmaX):
 
 def generic_weight_noexp(img, radius, func, sigmaX):
     # Same as above, without the np.exp part of it for the weighting function :)
-    import math
     X,Y = img.shape
     W = np.zeros((X*X, Y*Y))
     for x in range(X):
@@ -90,7 +113,6 @@ def generic_weight_rawfunc(img, radius, func):
 
 def weight_tot(img, radius, sigmaI, sigmaX):
     # TODO: fix this relative to the new weight_int
-    import math
     X,Y = img.shape
     W = np.zeros((X*X, Y*Y))
     for x in range(X):
@@ -152,7 +174,6 @@ def weight_int(img, radius, sigmaI):
 
 def weight_dist(img, radius, sigmaX):
     # TODO: fix this relative to the new weight_int
-    import math
     X,Y = img.shape
     W = np.zeros((X*X, Y*Y))
     for x in range(X):
