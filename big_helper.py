@@ -199,7 +199,7 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
     from nc_suite import weight_tot, weight_int, weight_dist # test radius, sigmas 
     from nc_suite import generic_weight, generic_weight_noexp, generic_weight_rawfunc # test params
     from nc_suite import colour_diff, texture_diff, manual_weights_abs_upper
-    from nc_suite import weight_int_broken, weight_int_broken2
+    from nc_suite import weight_int_broken, weight_int_broken2, final_weight_test
     # TODO: once one is confirmed working, remove others and bring its implementation into this file
     
     # colour_func = partial()
@@ -227,6 +227,7 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
                 partial(manual_weights_abs_upper, r=radius),                        # 15
                 partial(weight_int_broken,radius=radius, sigmaI=sigmaI),            # 16 
                 partial(weight_int_broken2,radius=radius, sigmaI=sigmaI),           # 17
+                partial(final_weight_test,r=radius, sigma=sigmaI)                   # 18
                 ]
     
     func = choices[choice]
