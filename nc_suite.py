@@ -168,7 +168,7 @@ def within_percentage(x,y,percentage):
     thresh = (percentage/100) * max(x,y)
     return diff <= thresh
 
-def manual_weights_binary(img, r=1, percentage=40):
+def manual_weights_binary(img, r=300, percentage=40):
     # assumes grayscale
     X,Y = img.shape
     N = X*Y
@@ -189,7 +189,7 @@ def manual_weights_binary(img, r=1, percentage=40):
                 # W[u][v] = W[v][u] = not I[u] == I[v] # Symmetric (0 if same, 1 if different)
     return W
 
-def manual_weights_abs(img, r=1):
+def manual_weights_abs(img, r=300):
     # assumes grayscale
     X,Y = img.shape
     N = X*Y
@@ -209,7 +209,7 @@ def manual_weights_abs(img, r=1):
                 W[u][v] = W[v][u] = np.abs(I[u] - I[v]) # Symmetric
     return W
 
-def manual_weights_abs_upper(img, r=1):
+def manual_weights_abs_upper(img, r=300):
     N = img.shape[0] * img.shape[1]
     W = np.zeros((N,N))
 
