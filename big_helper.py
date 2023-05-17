@@ -262,8 +262,8 @@ def get_eigensolvers():
         eigh_evd = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evd'), # faster, more memory
         eigh_evr = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evr'), # generally best
         eigh_evx = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx'), # may perform worse (low eigs asked)
-        eigh_evx_inf5 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx', subset_by_value=[-np.inf,5]), # may perform worse (low eigs asked)
-        eigh_evx_inf10 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx', subset_by_value=[-np.inf,10]), # may perform worse (low eigs asked)
+        # eigh_evx_inf5 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx', subset_by_value=[-np.inf,5]), # may perform worse (low eigs asked)
+        # eigh_evx_inf10 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='evx', subset_by_value=[-np.inf,10]), # may perform worse (low eigs asked)
     )
     
     
@@ -279,8 +279,8 @@ def get_eigensolvers():
         g_eigh_gv = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gv', type=1),
         g_eigh_gvd = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvd', type=1),
         g_eigh_gvx_inf5 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[-np.inf,5]), # subset only        
-        g_eigh_gvx_inf10 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[-np.inf,10]), # subset only
-        g_eigh_gvx_inf100 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[-np.inf,100]), # subset only
+        # g_eigh_gvx_inf10 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[-np.inf,10]), # subset only
+        # g_eigh_gvx_inf100 = partial(linalg.eigh, check_finite=False, lower=not upper, driver='gvx', type=1, subset_by_value=[-np.inf,100]), # subset only
     )
     
     
