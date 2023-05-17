@@ -315,11 +315,28 @@ def symm2(W):
     setdiag(L, 1 - isolated_mask)
     return L
 
+def laplace_expensive(W): # should be more expensive to compute...
+    # TODO: fix
+    D = np.sum(W, 1)
+    sqrt_D_inv = np.diag(1.0 / np.sqrt(D)) # assumes D is 1 dimensional vector
+    D = np.diag(D)
+    return sqrt_D_inv @ (D - W) @ sqrt_D_inv
+
+def laplace_cheap(W): # shift invert (implemented here) should be better...
+    # TODO: fix
+    D = np.sum(W, 1)
+    shift = 1
+    sqrt_D = np.diag(np.sqrt(D)) # assumes D is 1 dimensional vector
+    D = np.diag(D)
+    return sqrt_D @ np.linalg.inv(D @ (1-shift) - W) @ sqrt_D
+
 def get_laplacians():
     from collections import OrderedDict
     laplacians = OrderedDict(
         symm2 = symm2,
-        non_symm = non_symm
+        non_symm = non_symm,
+        # laplace_expensive = laplace_expensive,
+        # laplace_cheap = laplace_cheap,
     )
     
     return laplacians
