@@ -199,6 +199,7 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
     from nc_suite import weight_tot, weight_int, weight_dist # test radius, sigmas 
     from nc_suite import generic_weight, generic_weight_noexp, generic_weight_rawfunc # test params
     from nc_suite import colour_diff, texture_diff, manual_weights_abs_upper
+    from nc_suite import weight_int_broken, weight_int_broken2
     # TODO: once one is confirmed working, remove others and bring its implementation into this file
     
     # colour_func = partial()
@@ -224,6 +225,8 @@ def get_weights(img, choice=0, radius=10, sigmaI=0.1, sigmaX=1):
                 partial(generic_weight_rawfunc, radius=radius, func=texture_func),  # 13
                 partial(generic_weight_rawfunc, radius=radius, func=colour_diff),   # 14
                 partial(manual_weights_abs_upper, r=radius),                        # 15
+                partial(weight_int_broken,radius=radius, sigmaI=sigmaI),            # 16 
+                partial(weight_int_broken2,radius=radius, sigmaI=sigmaI),           # 17
                 ]
     
     func = choices[choice]
@@ -284,6 +287,43 @@ def get_eigensolvers():
     
     return eigs_standard, eigs_generalized
 
+def setdiag(m,d):
+    step = len(d) + 1
+    m.flat[::step] = d
+
+# non symm laplacian
+def non_symm(W):
+    # Diagonal Matrix - D
+    d = np.sum(W, axis=1)
+    D = np.zeros_like(W)
+    np.fill_diagonal(D, d)
+
+    A = D - W
+    return A
+
+# symm laplacian 2
+def symm2(W):
+    # L = W + W.T # ensure symmetric
+    L = W
+    np.fill_diagonal(L,0)
+    D = L.sum(0) # symmetric so axis doesn't matter
+    isolated_mask = (D == 0)
+    D = np.where(isolated_mask, 1, np.sqrt(D))
+    L = L/D
+    L = L/D[:, np.newaxis]
+    L = L * -1
+    setdiag(L, 1 - isolated_mask)
+    return L
+
+def get_laplacians():
+    from collections import OrderedDict
+    laplacians = OrderedDict(
+        symm2 = symm2,
+        non_symm = non_symm
+    )
+    
+    return laplacians
+
 def plot_range(values, ylabel):
     # Symmetric laplacian to get only positive eigenvalues... both output cuts but one is correct math
     fig, ax = plt.subplots()
@@ -308,7 +348,7 @@ def deterministic_vector_sign_flip(u):
     u *= signs # except sometimes this still flips between the two :)
     return u
 
-def argmin2(array):
+def argmin2(array, both=False):
     # O(n) to find second smallest argmin, instead of sorting O(n^2)
     min1 = np.inf
     min2 = np.inf
@@ -325,8 +365,10 @@ def argmin2(array):
         elif x > min1 and x < min2:
             min2 = x
             min_idx2 = i
-
-    return min_idx2
+    if both:
+        return min_idx1, min_idx2
+    else:
+        return min_idx2
 
 def generic_solve(W, laplace,solver):
     L = laplace(np.copy(W))
