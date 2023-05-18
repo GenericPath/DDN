@@ -332,6 +332,13 @@ def laplace_cheap(W): # shift invert (implemented here) should be better...
     return sqrt_D @ np.linalg.inv(D @ (1-shift) - W) @ sqrt_D
 
 def get_laplacians():
+    # TODO: from https://en.wikipedia.org/wiki/Laplacian_matrix
+    #       try each, D-A, D-W (A just being adjacency)
+    #       try symmetric normalized (include variants with pseudoinverse A+) for adjacency
+    #           and this one will include additional values of 1....
+    #           # np.pinv (SVD based) and scipy.linalg.pinv (least squared based)
+    #       try weighted edge variations in here
+    
     from collections import OrderedDict
     laplacians = OrderedDict(
         symm2 = symm2,
