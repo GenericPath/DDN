@@ -151,7 +151,7 @@ def weight_int_broken2(img, radius, sigmaI):
                     continue
     return W
 
-def weight_int(img, radius, sigmaI):
+def weight_int(img, radius, sigmaI=0.1):
     X,Y = img.shape
     N = X*X
     W = np.zeros((N, N))
@@ -210,6 +210,29 @@ def manual_weights_binary(img, r=300, percentage=40):
                 # W[u][v] = W[v][u] = not I[u] == I[v] # Symmetric (0 if same, 1 if different)
     return W
 
+def manual_weights_binary2(img, r=300, percentage=40):
+    X, Y = img.shape
+    N = X * Y
+    r = min(N // 2, r)
+
+    I = img.flatten()
+    indices = np.arange(N)
+
+    coord1 = np.array([indices // X, indices % Y]).T
+    coord2 = coord1.reshape((1, N, 2))
+
+    distances = np.linalg.norm(coord1 - coord2, axis=2)
+    within_radius = distances <= r
+
+    W = np.zeros((N, N))
+    # W[np.logical_not(within_radius)] = 0.0
+
+    for u in range(N-1):
+        end = min(u + r + 1, N)
+        for v in range(u + 1, end):
+            if within_radius[u, v]:
+                W[u, v] = W[v, u] = within_percentage(I[u], I[v], percentage)
+
 def manual_weights_abs(img, r=300):
     # assumes grayscale
     X,Y = img.shape
@@ -224,7 +247,26 @@ def manual_weights_abs(img, r=300):
         for v in range(u,end): # end is exclusive bound
             coord1 = np.array([u // X, u % Y])
             coord2 = np.array([v // X, v % Y])
-            if np.linalg.norm(coord1-coord2) > r: # 4-way connection
+            if np.linalg.norm(coord1-coord2) > r: # r-way connection
+                continue
+            else:
+                W[u][v] = W[v][u] = np.abs(I[u] - I[v]) # Symmetric
+    return W
+
+def manual_weight_abs2(img, r=300):
+    X,Y = img.shape
+    N = X*Y
+    W = np.zeros((N,N))
+
+    r = min(N//2, r) # ensure the r value doesn't exceed the axes of the outputs
+
+    I = img.flatten()
+    for u in range(N-1): # could use step size of r to improve speed?
+        end = min(u+r+1, N) # upper triangle, only traverse as far as needed
+        for v in range(u,end): # end is exclusive bound
+            coord1 = np.array([u // X, u % Y])
+            coord2 = np.array([v // X, v % Y])
+            if np.linalg.norm(coord1-coord2) > r: # r-way connection
                 continue
             else:
                 W[u][v] = W[v][u] = np.abs(I[u] - I[v]) # Symmetric
