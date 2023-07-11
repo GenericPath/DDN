@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class PixelSimilarityCNN(nn.Module):
-    def __init__(self, input_shape):
+    def __init__(self):
         super(PixelSimilarityCNN, self).__init__()
         
-        self.conv1 = nn.Conv2d(in_channels=input_shape[0], out_channels=32, kernel_size=3)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3) # input 1 channel as grayscale
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3)
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
