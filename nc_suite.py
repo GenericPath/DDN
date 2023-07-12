@@ -287,7 +287,7 @@ def manual_weights_abs_upper(img, r=300):
             W[u][v] = np.abs(I[u] - I[v]) # Upper only
     return W
 
-def intensity_weight_matrix(img):                                                                                 
+def intensity_weight_matrix(img, r=None): # blank arg R to match syntax of others with minimal code changes
   weight = np.abs(np.float32(img.flatten()[:, np.newaxis]) - np.float32(img.flatten()[np.newaxis, :]))
   W = np.exp(-weight/10)*255
   return W
