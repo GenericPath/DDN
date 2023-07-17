@@ -413,7 +413,8 @@ def plot_images(imgs, labels=None, row_headers=None, col_headers=None, colmns=No
     for i in range(1, num+1):
         sub = fig.add_subplot(ax,ay,i)
         if labels is not None:
-            sub.set_title(f'{labels[i-1]}')
+            if i-1 < len(labels):
+                sub.set_title(f'{labels[i-1]}')
             
         sub.axis('off')
         sub.imshow(imgs[i-1])
