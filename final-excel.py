@@ -1,10 +1,16 @@
 import numpy as np
 
-def save_imgs():
-    return
+# Function to save image data (NumPy arrays) to a file
+def save_imgs(file_path, image_list):
+    with open(file_path, 'wb') as file:
+        for image in image_list:
+            np.save(file, image)
 
-def save_data():
-    return
+# Function to save strings to a file
+def save_data(file_path, strings):
+    with open(file_path, 'w') as file:
+        for string in strings:
+            file.write(string + '\n')
 
 def get_images(size=(28,28), filename='data/test/3.jpg'):
     """ Currently only generates a single test image """
@@ -31,7 +37,7 @@ def get_images(size=(28,28), filename='data/test/3.jpg'):
     # imgs = [img_cv2,img_cv2_norm,img_sk_gray, img_sk]
     # imgs_text = ["cv2(0,255)", "cv2/max(0,1)", "sk(gray)", "sk"]
     print(imgs_text)
-    print(f'{np.min(img):.4f}, {np.max(img):.4f}\n{img.dtype}' for img in imgs)
+    print([f'{np.min(img):.4f}, {np.max(img):.4f}\n{img.dtype}' for img in imgs])
     return imgs, imgs_text
     
     
@@ -100,11 +106,35 @@ def get_eigfuncs():
     
     return [np.linalg.eigh], ['np.eigh']
     
+def compute_kl_divergence(image1, image2):
+    # Flatten the images into 1D arrays
+    # Compute histograms of the pixel values
+    hist1, _ = np.histogram(image1.flatten(), bins=np.linspace(0, 1, num=256)) # range of 0,1 originally from 0,255
+    hist2, _ = np.histogram(image2.flatten(), bins=np.linspace(0, 1, num=256))
+
+    total_pixels = np.sum(hist1) # normalize by the total number of pixels (so it sums to 1)
+    hist1 = hist1/total_pixels
+    hist2 = hist2/total_pixels
+
+    # small constant factor to avoid division by zero, none on the first hist1 as multiply by zero is fine
+    kl_divergence = np.sum(hist1 * np.log((hist1 + 1e-10) / (hist2 + 1e-10)))
+
+    return kl_divergence   
+
+def normalize_image(image1):
+    # Normalize image1 to the range [0, 1]
+    normalized_image1 = (image1 - np.min(image1)) / (np.max(image1) - np.min(image1))
+    return normalized_image1 
+
+def get_objfuncs():
+    # TODO: implement this
+    return [], []
+
 def experiment():
     import numpy as np
     
-    truth = np.zeros((28,28)) # placeholder for now
-    
+    size = (28,28)
+    truth = np.zeros(size) # placeholder for now
     radii = [1,-1]
     nums = [0]
     W_zerods = [False,True]
@@ -112,28 +142,58 @@ def experiment():
     indicies = [0, 1] # smallest and second smallest... should we avoid similar ones? or avoid near 0's?
     
     e_funcs, e_funcs_text = get_eigfuncs()
+    obj_funcs, const_funcs = get_objfuncs() # TODO: implement this
     
-    imgs, imgs_text = get_images()
+    # excel spreadsheet plan (csv)
+    # headings:
+    # img_name, weight_name, l_name, eig_name, index, columnar, kl, l1, l2, abs cosine, nc cut, obj func(s), eq const(s)
+    
+    imgs, imgs_text = get_images(size)
     for img, img_name in zip(imgs, imgs_text):
         weights, weights_text = get_weights(img, radii=radii)
         for weight, weight_name in zip(weights,weights_text):
             
-            plot_output = []
+            plot_output = [] # a smaller subset to plot per set of weight
+            plot_labels = []
+            data = ['img_name, weight_name, l_name, eig_name, index, columnar, kl, l1, l2'] # TODO: update this later
+            # TODO: convert all of the \n's into , such that the column names can be updated
+            plot_hist_output = [] # smaller subset to plot histograms of outputs
             
             laplaces, laplaces_text = get_laplaces(weight, nums, W_zerods, L_zerods)
             for laplace, l_name in zip(laplaces, laplaces_text):
                 for eig_func, eig_name in zip(e_funcs, e_funcs_text):
                     try:
-                        w,v = eig_func(laplace)
-                        # TODO: calculate eigenspectrum (spread of eigenvalues)
+                        w,v = eig_func(laplace) # laplace @ v = w * laplace
+                        # TODO 
+                        # - calculate eigenspectrum (spread of eigenvalues)
                         
-                        # compute sorted indicies
-                        idx = np.argsort(w)  # index of second smallest
+                        idx = np.argsort(w)
                         
                         for index in indicies:
-                            vec = v[:,idx[index]]
-                            # for vec and binarized vec (either nc cut point or split on 0?)
-                                # - calculate kl divergence, l1 and l2 from known sample...
+                            for columnar in [True, False]:
+                                if columnar:
+                                    # NOTE: np.allclose(laplace @ v[:,0],w[0] * laplace, 1e-20,1e-14)
+                                    vec = v[:,idx[index]] # np.linalg.eigh is column based
+                                else:
+                                    vec = v[idx[index]] # some others (like lobpcg) are row..?
+
+                                plot_output.append(vec)
+                                plot_labels.append(f'{img_name},{weight_name},{l_name},{eig_name},{index},{columnar}')
+
+                                # TODO: actually takes the plot stuff.. and plot it and save that as an image (or a folder of images...)
+
+                                # TODO: i think we normalize for kl but is it neccessary?
+                                # vec = normalize_image(vec)
+                            
+                                kl = compute_kl_divergence(vec, truth)
+                                l1 = np.abs(vec - truth).sum()
+                                l2 = np.linalg.norm(vec - truth)
+                                
+            
+                                data.append(f'{img_name},{weight_name},{l_name},{eig_name},{index},{columnar},{kl},{l1},{l2}')
+                            
+                            # for vec and binarized vec (either nc cut point or split on 0 or 0.5?)
+                                # TODO
                                 # - calculate absolute cosine similarity from known sample...
                                 # - store histogram... maybe plot it maybe do something with?
                                 # - calculate NC cutting point..?
@@ -144,8 +204,11 @@ def experiment():
                         # make a blank vector to use instead
                         continue
                     
+            save_imgs('img_output.np', plot_output)
+            save_data('data_output.txt', data)
+                    
 
-
+experiment()
 
 # after - test the determinism from gould paper...
 
