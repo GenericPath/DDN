@@ -1,16 +1,110 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-# Function to save image data (NumPy arrays) to a file
 def save_imgs(file_path, image_list):
     with open(file_path, 'wb') as file:
         for image in image_list:
             np.save(file, image)
 
-# Function to save strings to a file
 def save_data(file_path, strings):
     with open(file_path, 'w') as file:
         for string in strings:
             file.write(string + '\n')
+                   
+def save_plot_imgs(image_list, labels=None, output_path='output_image.png', grid_size=None):
+    """
+    Plots all the images together in a grid layout and saves the plot as a single image.
+
+    Parameters:
+        image_list (list of numpy arrays): List of images as numpy arrays.
+        labels (list of str): List of labels for each image (optional). Default is None.
+        output_path (str): Path to save the output image. Default is 'output_image.png'.
+        grid_size (tuple of int): Size of the grid (rows, columns) to arrange the images. If None, it is calculated based on the number of images. Default is None.
+        square (bool): Whether to make the images square by padding if needed. Default is True.
+    """
+
+    # Calculate the grid size if not provided
+    num_images = len(image_list)
+    if grid_size is None:
+        num_rows = np.ceil(np.sqrt(num_images)).astype(int)
+        num_cols = np.ceil(num_images / num_rows).astype(int)
+    else:
+        num_rows, num_cols = grid_size
+
+    # Create the figure and axis
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=(12, 12))  # Adjust the figsize if needed
+    fig.suptitle(output_path, fontsize=16)
+
+    # Iterate through each image
+    for i in range(num_rows):
+        for j in range(num_cols):
+            idx = i * num_cols + j
+            if idx < num_images:
+                # # Check if the image needs to be squared
+                image = image_list[idx]
+
+                # Show the image
+                axs[i, j].imshow(image)
+                axs[i, j].axis('off')
+
+                # Add label if provided
+                if labels is not None and idx < len(labels):
+                    axs[i, j].set_title(labels[idx])
+
+    # Remove any remaining empty subplots
+    for idx in range(num_images, num_rows * num_cols):
+        fig.delaxes(axs.flatten()[idx])
+
+    # Save the plot to a file
+    plt.tight_layout()  # Adjust spacing and layout
+    plt.savefig(output_path, bbox_inches='tight', pad_inches=0.1, dpi=300)  # Adjust dpi if needed
+    plt.close()
+
+def save_plot_histograms(images, output_path=None, num_bins=256, grid_size=None):
+    num_images = len(images)
+    if grid_size is None:
+        num_rows = np.ceil(np.sqrt(num_images)).astype(int)
+        num_cols = np.ceil(num_images / num_rows).astype(int)
+        
+        grid_size = (num_rows, num_cols)
+    else:
+        num_rows, num_cols = grid_size
+    
+    fig, axes = plt.subplots(*(grid_size), figsize=(12, 9), sharex=True, sharey=True)
+    fig.suptitle(output_path, fontsize=16)
+
+    for i, ax in enumerate(axes.ravel()):
+        if i < len(images):
+            image = images[i]
+            # Normalize image to the range [0, 255]
+            image_normalized = (image - image.min()) / (image.max() - image.min()) * 255
+
+            # Calculate histogram
+            hist, bins = np.histogram(image_normalized.flatten(), bins=num_bins, range=[0, 256])
+            # Normalize histogram for better visualization
+            hist = hist / hist.max()
+
+            # Plot the histogram with a filled step plot
+            ax.fill_between(bins[:-1], hist, alpha=0.75)
+            ax.set_xlim([0, 256])
+            ax.set_ylim([0, 1])
+            ax.set_title(f"Image {i+1}")
+            ax.set_xlabel("Pixel Value")
+            ax.set_ylabel("Normalized Frequency")
+
+    # Remove any empty subplots
+    for i in range(len(images), grid_size[0] * grid_size[1]):
+        axes.ravel()[i].axis('off')
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust the position of the main title
+
+    # Save the plot to a file if the output_file is provided
+    if output_path:
+        plt.savefig(output_path)
+    else:
+        plt.show()
+
+    plt.close()
 
 def get_images(size=(28,28), filename='data/test/3.jpg'):
     """ Currently only generates a single test image """
@@ -40,7 +134,6 @@ def get_images(size=(28,28), filename='data/test/3.jpg'):
     print([f'{np.min(img):.4f}, {np.max(img):.4f}\n{img.dtype}' for img in imgs])
     return imgs, imgs_text
     
-    
 def get_weights(image, radii=[1,-1]):
     """ Given an image, compute a number of weights """
     from nc_suite import manual_weight_abs2, manual_weights_binary, intens_posit_wm
@@ -56,11 +149,11 @@ def get_weights(image, radii=[1,-1]):
             radius = image.size # or np.prod(np.shape)
         for method, method_name in zip(methods, method_names):
             weights.append(method(image, radius))
-            weight_labels.append(f"{str(radius)}\n{method_name}")
+            weight_labels.append(f"{str(radius)},{method_name}")
     weights.append(intens_posit_wm(image))
-    weight_labels.append(f"{image}\nintens_posit_wm")
+    weight_labels.append(f"{image.size},intens_posit_wm")
     weights.append(intensity_weight_matrix(image))
-    weight_labels.append(f'{image}\nintensity_weight_matrix')
+    weight_labels.append(f'{image.size},intensity_weight_matrix')
     
     return weights, weight_labels
     
@@ -94,7 +187,7 @@ def get_laplaces(W, nums=[0],W_zerods=[True], L_zerods=[False]):
                 if L_zerod:
                     np.fill_diagonal(L, 0)
                 outputs.append(L)
-                outputs_text.append(f'{num}\nW-{W_zerod}\nL-{L_zerod}')
+                outputs_text.append(f'{num},W-{W_zerod},L-{L_zerod}')
     return outputs, outputs_text
 
 def get_eigfuncs():
@@ -131,7 +224,8 @@ def get_objfuncs():
     return [], []
 
 def experiment():
-    import numpy as np
+    import os
+    from datetime import datetime
     
     size = (28,28)
     truth = np.zeros(size) # placeholder for now
@@ -148,6 +242,12 @@ def experiment():
     # headings:
     # img_name, weight_name, l_name, eig_name, index, columnar, kl, l1, l2, abs cosine, nc cut, obj func(s), eq const(s)
     
+    # Create a folder name using the current date and time
+    save_dir = 'results'
+    date_string = datetime.now().strftime('%Y%m%d-%H%M%S')
+    save_dir = os.path.join(save_dir, date_string)
+    os.makedirs(save_dir, exist_ok=True)
+    
     imgs, imgs_text = get_images(size)
     for img, img_name in zip(imgs, imgs_text):
         weights, weights_text = get_weights(img, radii=radii)
@@ -155,17 +255,17 @@ def experiment():
             
             plot_output = [] # a smaller subset to plot per set of weight
             plot_labels = []
-            data = ['img_name, weight_name, l_name, eig_name, index, columnar, kl, l1, l2'] # TODO: update this later
-            # TODO: convert all of the \n's into , such that the column names can be updated
-            plot_hist_output = [] # smaller subset to plot histograms of outputs
+            # 'img_name, weight_name, l_name, eig_name, index, columnar, kl, l1, l2, val_min, val_max'
+            data = [] # just add above column labels manually to the excel spreadsheet
             
             laplaces, laplaces_text = get_laplaces(weight, nums, W_zerods, L_zerods)
             for laplace, l_name in zip(laplaces, laplaces_text):
                 for eig_func, eig_name in zip(e_funcs, e_funcs_text):
                     try:
                         w,v = eig_func(laplace) # laplace @ v = w * laplace
-                        # TODO 
-                        # - calculate eigenspectrum (spread of eigenvalues)
+                        # calculate eigenspectrum (spread of eigenvalues)
+                        w_min = np.min(w)
+                        w_max = np.max(w)
                         
                         idx = np.argsort(w)
                         
@@ -177,35 +277,34 @@ def experiment():
                                 else:
                                     vec = v[idx[index]] # some others (like lobpcg) are row..?
 
+                                vec = np.real(vec.reshape(size))
+                                
                                 plot_output.append(vec)
                                 plot_labels.append(f'{img_name},{weight_name},{l_name},{eig_name},{index},{columnar}')
 
-                                # TODO: actually takes the plot stuff.. and plot it and save that as an image (or a folder of images...)
-
-                                # TODO: i think we normalize for kl but is it neccessary?
-                                # vec = normalize_image(vec)
+                                # NOTE: i think we normalize for kl but is it neccessary? and does it help other metrics?
+                                vec = normalize_image(vec)
                             
-                                kl = compute_kl_divergence(vec, truth)
-                                l1 = np.abs(vec - truth).sum()
-                                l2 = np.linalg.norm(vec - truth)
-                                
-            
-                                data.append(f'{img_name},{weight_name},{l_name},{eig_name},{index},{columnar},{kl},{l1},{l2}')
-                            
-                            # for vec and binarized vec (either nc cut point or split on 0 or 0.5?)
                                 # TODO
                                 # - calculate absolute cosine similarity from known sample...
                                 # - store histogram... maybe plot it maybe do something with?
                                 # - calculate NC cutting point..?
                                 # - calculate objective function(s) and constraint function(s)
+                                kl = compute_kl_divergence(vec, truth)
+                                l1 = np.abs(vec - truth).sum()
+                                l2 = np.linalg.norm(vec - truth)
+                                
+                                data.append(f'{img_name},{weight_name},{l_name},{eig_name},{index},{columnar},{kl},{l1},{l2},{w_min},{w_max}')
                     except:
                         for index in indicies:
                             plot_output.append(np.zeros_like(img))
                         # make a blank vector to use instead
                         continue
                     
-            save_imgs('img_output.np', plot_output)
-            save_data('data_output.txt', data)
+            save_imgs(os.path.join(save_dir,'data_images.np'), plot_output)
+            save_data(os.path.join(save_dir,'data_output.txt'), data+['\n\n'])
+            save_plot_imgs(plot_output, labels=data, output_path=os.path.join(save_dir,f'{img_name},{weight_name}.png'))
+            save_plot_histograms(plot_output, output_path=os.path.join(save_dir,f'{img_name},{weight_name},HISTOGRAMS.png'))
                     
 
 experiment()
