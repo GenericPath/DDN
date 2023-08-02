@@ -203,6 +203,7 @@ def get_eigfuncs():
     import scipy.linalg as linalg
     import scipy.sparse.linalg as sparse_linalg
     
+    # TODO: add pytorch.linalg.eigh
     # TODO: add lobpcg and a bunch of others :)
     # TODO: generalized and non-generalized forms?
     eig_funcs = [np.linalg.eig, np.linalg.eigh, linalg.eig, linalg.eigh, sparse_linalg.eigs, sparse_linalg.eigsh]
@@ -238,7 +239,12 @@ def experiment():
     from datetime import datetime
     
     size = (28,28)
-    truth = np.zeros(size) # placeholder for now
+    imgs, imgs_text = get_images(size)
+    
+    truth = np.copy(imgs[1]) # cv2_norm
+    truth[truth>0.5] = 1
+    truth[truth<=0.5] = 0 # TODO: use a truth from a calculated one.. but this works for now
+        
     radii = [1,10,784//4,-1]
     nums = [0,1]
     W_zerods = [False,True]
@@ -258,7 +264,10 @@ def experiment():
     save_dir = os.path.join(save_dir, date_string)
     os.makedirs(save_dir, exist_ok=True)
     
-    imgs, imgs_text = get_images(size)
+    imgs = imgs+[truth, truth*255]
+    imgs_text = imgs_text+['truth(0,1)', 'truth(0,255)']
+    save_plot_imgs(imgs, labels=imgs_text, output_path=os.path.join(save_dir,f'1images.png'))
+    
     for img, img_name in zip(imgs, imgs_text):
         weights, weights_text = get_weights(img, radii=radii)
         save_plot_imgs(weights, labels=weights_text, output_path=os.path.join(save_dir,f'{img_name},WEIGHTS.png'))
