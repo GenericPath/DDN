@@ -280,7 +280,7 @@ def experiment():
             data = [] # just add above column labels manually to the excel spreadsheet
             
             laplaces, laplaces_text = get_laplaces(weight, nums, W_zerods, L_zerods)
-            save_plot_imgs(laplaces, labels=laplaces_text, output_path=save_dir,output_name=f'{img_name},{weight_name},LAPLACES.png'))
+            save_plot_imgs(laplaces, labels=laplaces_text, output_path=save_dir,output_name=f'{img_name},{weight_name},LAPLACES.png')
             for laplace, l_name in zip(laplaces, laplaces_text):
                 for eig_func, eig_name in zip(e_funcs, e_funcs_text):
                     try:
