@@ -213,7 +213,7 @@ def get_eigfuncs():
     # TODO: generalized and non-generalized forms?
     eig_funcs = [np.linalg.eig, np.linalg.eigh, linalg.eig, linalg.eigh, sparse_linalg.eigs, sparse_linalg.eigsh]
     eig_names = ["np.eig", "np.eigh", "scipy.eig", "scipy.eigh", "scipy.sparse.eigs", "scipy.sparse.eigsh"]
-    return [np.linalg.eigh], ['np.eigh']
+    return eig_funcs, eig_names
     
 def compute_kl_divergence(image1, image2):
     # Flatten the images into 1D arrays
