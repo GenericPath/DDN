@@ -8,3 +8,4 @@ experiments/
 checkpoints/
 wandb/
 test/
+results/
