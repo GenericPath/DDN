@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 def save_imgs(file_path, image_list):
     with open(file_path, 'ab') as file:
@@ -11,7 +12,7 @@ def save_data(file_path, strings):
         for string in strings:
             file.write(string + '\n')
                    
-def save_plot_imgs(image_list, labels=None, output_path='output_image.png', grid_size=None):
+def save_plot_imgs(image_list, labels=None, output_path='folder/', output_name='image.png', grid_size=None):
     """
     Plots all the images together in a grid layout and saves the plot as a single image.
 
@@ -33,7 +34,9 @@ def save_plot_imgs(image_list, labels=None, output_path='output_image.png', grid
 
     # Create the figure and axis
     fig, axs = plt.subplots(num_rows, num_cols, figsize=(12, 12))  # Adjust the figsize if needed
-    fig.suptitle(output_path, fontsize=16)
+    
+    output_path = os.path.join(output_path, output_name)
+    fig.suptitle(output_name, fontsize=16)
 
     # Iterate through each image
     for i in range(num_rows):
@@ -59,7 +62,7 @@ def save_plot_imgs(image_list, labels=None, output_path='output_image.png', grid
     plt.savefig(output_path, bbox_inches='tight', pad_inches=0.1, dpi=300)  # Adjust dpi if needed
     plt.close()
 
-def save_plot_histograms(images, output_path=None, num_bins=256, grid_size=None):
+def save_plot_histograms(images, output_path='folder/', output_name='image.png', num_bins=256, grid_size=None):
     num_images = len(images)
     if grid_size is None:
         num_rows = np.ceil(np.sqrt(num_images)).astype(int)
@@ -70,7 +73,9 @@ def save_plot_histograms(images, output_path=None, num_bins=256, grid_size=None)
         num_rows, num_cols = grid_size
     
     fig, axes = plt.subplots(*(grid_size), figsize=(12, 9), sharex=True, sharey=True)
-    fig.suptitle(output_path, fontsize=16)
+    
+    output_path = os.path.join(output_path, output_name)
+    fig.suptitle(output_name, fontsize=16)
 
     for i, ax in enumerate(axes.ravel()):
         if i < len(images):
@@ -254,23 +259,19 @@ def experiment():
     e_funcs, e_funcs_text = get_eigfuncs()
     obj_funcs, const_funcs = get_objfuncs() # TODO: implement this
     
-    # excel spreadsheet plan (csv)
-    # headings:
-    # img_name, weight_name, l_name, eig_name, index, columnar, kl, l1, l2, abs cosine, nc cut, obj func(s), eq const(s)
-    
     # Create a folder name using the current date and time
     save_dir = 'results'
     date_string = datetime.now().strftime('%Y%m%d-%H%M%S')
     save_dir = os.path.join(save_dir, date_string)
     os.makedirs(save_dir, exist_ok=True)
     
-    imgs = imgs+[truth, truth*255]
+    imgs = imgs+[truth.astype(float), truth*255]
     imgs_text = imgs_text+['truth(0,1)', 'truth(0,255)']
-    save_plot_imgs(imgs, labels=imgs_text, output_path=os.path.join(save_dir,f'1images.png'))
+    save_plot_imgs(imgs, labels=imgs_text, output_path=save_dir,output_name=f'1images.png')
     
     for img, img_name in zip(imgs, imgs_text):
         weights, weights_text = get_weights(img, radii=radii)
-        save_plot_imgs(weights, labels=weights_text, output_path=os.path.join(save_dir,f'{img_name},WEIGHTS.png'))
+        save_plot_imgs(weights, labels=weights_text, output_path=save_dir,output_name=f'{img_name},WEIGHTS.png')
         for weight, weight_name in zip(weights,weights_text):
             
             plot_output = [] # a smaller subset to plot per set of weight
@@ -301,7 +302,7 @@ def experiment():
                                 vec = np.real(vec.reshape(size))
                                 
                                 plot_output.append(vec)
-                                plot_labels.append(f'{img_name},{weight_name},{l_name},{eig_name},{index},{columnar}')
+                                plot_labels.append(f'{l_name}\n{eig_name}\n{index},{columnar}')
 
                                 # NOTE: i think we normalize for kl but is it neccessary? and does it help other metrics?
                                 vec = normalize_image(vec)
@@ -324,8 +325,8 @@ def experiment():
                     
             save_imgs(os.path.join(save_dir,'data_images.np'), plot_output)
             save_data(os.path.join(save_dir,'data_output.txt'), data+['\n\n'])
-            save_plot_imgs(plot_output, labels=data, output_path=os.path.join(save_dir,f'{img_name},{weight_name}.png'))
-            save_plot_histograms(plot_output, output_path=os.path.join(save_dir,f'{img_name},{weight_name},HISTOGRAMS.png'))
+            save_plot_imgs(plot_output, labels=plot_labels, output_path=save_dir,output_name=f'{img_name},{weight_name}.png')
+            save_plot_histograms(plot_output, output_path=save_dir,output_name=f'{img_name},{weight_name},HISTOGRAMS.png')
                     
 
 experiment()
