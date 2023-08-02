@@ -33,7 +33,7 @@ def save_plot_imgs(image_list, labels=None, output_path='folder/', output_name='
         num_rows, num_cols = grid_size
 
     # Create the figure and axis
-    fig, axs = plt.subplots(num_rows, num_cols, figsize=(12, 12))  # Adjust the figsize if needed
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=(30, 30))  # Adjust the figsize if needed
     
     output_path = os.path.join(output_path, output_name)
     fig.suptitle(output_name, fontsize=16)
@@ -72,7 +72,7 @@ def save_plot_histograms(images, output_path='folder/', output_name='image.png',
     else:
         num_rows, num_cols = grid_size
     
-    fig, axes = plt.subplots(*(grid_size), figsize=(12, 9), sharex=True, sharey=True)
+    fig, axes = plt.subplots(*(grid_size), figsize=(30, 30), sharex=True, sharey=True)
     
     output_path = os.path.join(output_path, output_name)
     fig.suptitle(output_name, fontsize=16)
@@ -81,10 +81,10 @@ def save_plot_histograms(images, output_path='folder/', output_name='image.png',
         if i < len(images):
             image = images[i]
             # Normalize image to the range [0, 255]
-            image_normalized = (image - image.min()) / (image.max() - image.min()) * 255
+            image_normalized = (image - image.min()) / (image.max() - image.min())
 
             # Calculate histogram
-            hist, bins = np.histogram(image_normalized.flatten(), bins=num_bins, range=[0, 256])
+            hist, bins = np.histogram(image_normalized.flatten(), bins=num_bins, range=[0, 1])
             # Normalize histogram for better visualization
             hist = hist / hist.max()
 
@@ -92,9 +92,9 @@ def save_plot_histograms(images, output_path='folder/', output_name='image.png',
             ax.fill_between(bins[:-1], hist, alpha=0.75)
             ax.set_xlim([0, 256])
             ax.set_ylim([0, 1])
-            ax.set_title(f"Image {i+1}")
-            ax.set_xlabel("Pixel Value")
-            ax.set_ylabel("Normalized Frequency")
+            # ax.set_title(f"Image {i+1}")
+            # ax.set_xlabel("Pixel Value")
+            # ax.set_ylabel("Normalized Frequency")
 
     # Remove any empty subplots
     for i in range(len(images), grid_size[0] * grid_size[1]):
