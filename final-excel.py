@@ -2,12 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def save_imgs(file_path, image_list):
-    with open(file_path, 'wb') as file:
+    with open(file_path, 'ab') as file:
         for image in image_list:
             np.save(file, image)
 
 def save_data(file_path, strings):
-    with open(file_path, 'w') as file:
+    with open(file_path, 'a') as file:
         for string in strings:
             file.write(string + '\n')
                    
@@ -40,7 +40,6 @@ def save_plot_imgs(image_list, labels=None, output_path='output_image.png', grid
         for j in range(num_cols):
             idx = i * num_cols + j
             if idx < num_images:
-                # # Check if the image needs to be squared
                 image = image_list[idx]
 
                 # Show the image
@@ -108,28 +107,29 @@ def save_plot_histograms(images, output_path=None, num_bins=256, grid_size=None)
 
 def get_images(size=(28,28), filename='data/test/3.jpg'):
     """ Currently only generates a single test image """
-    
-    # from skimage.io import imread
-    # from skimage.transform import resize
-    # from skimage.color import rgb2gray
+    from skimage.io import imread
+    from skimage.transform import resize
+    from skimage.color import rgb2gray
     import cv2
-    import numpy as np
 
     img_cv2 = np.array(cv2.resize(cv2.imread(filename,0), size), dtype=np.float32) 
     # float32 to remove overflows in weights matrix
 
-    # img_sk = imread("data/test/3.jpg",0)
-    # img_sk_gray = rgb2gray(img_sk)
-    # img_sk = resize(img_sk, size)
-    # img_sk_gray = resize(img_sk_gray, size)
+    img_sk = imread("data/test/3.jpg",0)
+    img_sk_gray = rgb2gray(img_sk)
+    img_sk = resize(img_sk, size)
+    img_sk_gray = resize(img_sk_gray, size)
 
     img_cv2_norm = img_cv2 / np.max(img_cv2)
 
-    imgs = [img_cv2_norm]
-    imgs_text = ["cv2_norm"]
+    # imgs = [img_cv2_norm]
+    # imgs_text = ["cv2_norm"]
+    
+    sk_norm = img_sk / np.max(img_sk)
+    sk_255 = sk_norm * 255
 
-    # imgs = [img_cv2,img_cv2_norm,img_sk_gray, img_sk]
-    # imgs_text = ["cv2(0,255)", "cv2/max(0,1)", "sk(gray)", "sk"]
+    imgs = [img_cv2,img_cv2_norm,img_sk_gray, img_sk, sk_norm, sk_255]
+    imgs_text = ["cv2(0,255)", "cv2(0,1)", "sk(gray)", "sk(decimal)", "sk(0,1)", "sk(0,255)"]
     print(imgs_text)
     print([f'{np.min(img):.4f}, {np.max(img):.4f}\n{img.dtype}' for img in imgs])
     return imgs, imgs_text
@@ -148,17 +148,26 @@ def get_weights(image, radii=[1,-1]):
         if radius == -1: # -1 corresponds to full size
             radius = image.size # or np.prod(np.shape)
         for method, method_name in zip(methods, method_names):
-            weights.append(method(image, radius))
-            weight_labels.append(f"{str(radius)},{method_name}")
-    weights.append(intens_posit_wm(image))
-    weight_labels.append(f"{image.size},intens_posit_wm")
-    weights.append(intensity_weight_matrix(image))
-    weight_labels.append(f'{image.size},intensity_weight_matrix')
+            try:
+                weights.append(method(image, radius))
+                weight_labels.append(f"{str(radius)},{method_name}")
+            except:
+                weights.append(np.zeros((784,784)))
+                weight_labels.append(f"{str(radius)},{method_name}")
+    try:
+        weights.append(intens_posit_wm(image))
+        weight_labels.append(f"{image.size},intens_posit_wm")
+        weights.append(intensity_weight_matrix(image))
+        weight_labels.append(f'{image.size},intensity_weight_matrix')
+    except:
+        weights.append(np.zeros((784,784)))
+        weight_labels.append(f"{image.size},intens_posit_wm")
+        weights.append(np.zeros((784,784)))
+        weight_labels.append(f'{image.size},intensity_weight_matrix')
     
     return weights, weight_labels
     
 def get_laplaces(W, nums=[0],W_zerods=[True], L_zerods=[False]):
-    
     outputs = []
     outputs_text = []
     for num in nums:
@@ -191,12 +200,13 @@ def get_laplaces(W, nums=[0],W_zerods=[True], L_zerods=[False]):
     return outputs, outputs_text
 
 def get_eigfuncs():
-    import numpy as np
-    # import scipy
+    import scipy.linalg as linalg
+    import scipy.sparse.linalg as sparse_linalg
     
     # TODO: add lobpcg and a bunch of others :)
     # TODO: generalized and non-generalized forms?
-    
+    eig_funcs = [np.linalg.eig, np.linalg.eigh, linalg.eig, linalg.eigh, sparse_linalg.eigs, sparse_linalg.eigsh]
+    eig_names = ["np.eig", "np.eigh", "scipy.eig", "scipy.eigh", "scipy.sparse.eigs", "scipy.sparse.eigsh"]
     return [np.linalg.eigh], ['np.eigh']
     
 def compute_kl_divergence(image1, image2):
@@ -229,8 +239,8 @@ def experiment():
     
     size = (28,28)
     truth = np.zeros(size) # placeholder for now
-    radii = [1,-1]
-    nums = [0]
+    radii = [1,10,784//4,-1]
+    nums = [0,1]
     W_zerods = [False,True]
     L_zerods = [False,True]
     indicies = [0, 1] # smallest and second smallest... should we avoid similar ones? or avoid near 0's?
@@ -251,6 +261,7 @@ def experiment():
     imgs, imgs_text = get_images(size)
     for img, img_name in zip(imgs, imgs_text):
         weights, weights_text = get_weights(img, radii=radii)
+        save_plot_imgs(weights, labels=weights_text, output_path=os.path.join(save_dir,f'{img_name},WEIGHTS.png'))
         for weight, weight_name in zip(weights,weights_text):
             
             plot_output = [] # a smaller subset to plot per set of weight
@@ -259,6 +270,7 @@ def experiment():
             data = [] # just add above column labels manually to the excel spreadsheet
             
             laplaces, laplaces_text = get_laplaces(weight, nums, W_zerods, L_zerods)
+            save_plot_imgs(laplaces, labels=laplaces_text, output_path=os.path.join(save_dir,f'{img_name},{weight_name},LAPLACES.png'))
             for laplace, l_name in zip(laplaces, laplaces_text):
                 for eig_func, eig_name in zip(e_funcs, e_funcs_text):
                     try:
